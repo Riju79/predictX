@@ -1,0 +1,14 @@
+# Rust's output directory
+/target
+
+# Local settings
+.soroban
+.stellar
+
+# Web dependencies & builds
+node_modules
+.next
+out
+build
+*.tsbuildinfo
+.DS_Store

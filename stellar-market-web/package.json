@@ -1,0 +1,34 @@
+{
+  "name": "stellar-market-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@stellar/freighter-api": "^6.0.1",
+    "@stellar/stellar-sdk": "^16.0.1",
+    "@tailwindcss/postcss": "^4.3.2",
+    "buffer": "^6.0.3",
+    "framer-motion": "^12.42.2",
+    "lightweight-charts": "^5.2.0",
+    "lucide-react": "^1.24.0",
+    "next": "16.2.10",
+    "postcss": "^8.5.16",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^3.9.2",
+    "tailwindcss": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "typescript": "^5"
+  }
+}
