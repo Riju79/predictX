@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
 import { Outcome, MarketState, MarketStatus } from '@/src/bindings/market';
 import BackgroundScene from '@/components/ui/aurora-section-hero';
+import Footer from './app/components/Footer';
 import { 
   STELLAR_CONFIG, 
   toRawAmount as configToRawAmount, 
@@ -379,16 +380,21 @@ export default function Home() {
 
   const loadMarketData = async (pk: string) => {
     try {
-      const marketClient = getMarketClient(pk);
       const tokenClient = getTokenClient(pk);
-      const [stateRes, balRes] = await Promise.all([
-        marketClient.get_market_state({ market_id: MARKET_NUMERIC_ID }),
-        tokenClient.balance({ id: pk }),
-      ]);
-      setMarketState(stateRes.result as MarketState);
+      const balRes = await tokenClient.balance({ id: pk });
       setTokenBalance(fromRawAmount(balRes.result as bigint));
     } catch (e) {
-      console.error('Error loading market data:', e);
+      console.error('Error loading token balance:', e);
+    }
+
+    try {
+      const marketClient = getMarketClient(pk);
+      const stateRes = await marketClient.get_market_state({ market_id: MARKET_NUMERIC_ID });
+      if (stateRes?.result) {
+        setMarketState(stateRes.result as MarketState);
+      }
+    } catch (e) {
+      // Uninitialized on-chain market #0 defaults safely to local state
     }
   };
 
@@ -471,12 +477,14 @@ export default function Home() {
         </div>
         <div className="wordmark"><span className="dot" />PredictX</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button
-            className={`connect-btn${walletConnected ? ' connected' : ''}`}
-            onClick={walletConnected ? () => setShowModal(true) : connectWallet}
+          <Link
+            href="/app"
+            className="connect-btn connected"
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px' }}
           >
-            {walletConnected ? shortKey : 'Connect Wallet'}
-          </button>
+            <span>{walletConnected ? `Trading App (${shortKey})` : 'Launch Trading App'}</span>
+            <span style={{ fontSize: 13 }}>➔</span>
+          </Link>
         </div>
       </nav>
 
@@ -1066,110 +1074,12 @@ export default function Home() {
             <a href="#">Instagram</a>
             <a href="#">X</a>
           </div>
-          <a href="#hero" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 'fit-content' }}>
-            Start trading
-          </a>
-        </div>
-        <div className="footer-bottom">
-          <p>Risk warning: Perpetual and prediction-market trading, especially with leverage, is high risk. Losses may exceed deposits. This is not investment advice. Results are not guaranteed.</p>
-          <div className="wordmark" style={{ color: '#0d1b22', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src="/logo.png" alt="PredictX Logo" style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: '3px' }} />
-            PredictX
-          </div>
+          <Link href="/app" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 'fit-content' }}>
+            Start trading ➔
+          </Link>
         </div>
       </footer>
-
-      {/* ── MARKETS MODAL ── */}
-      {showModal && (
-        <div className="markets-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
-          <div className="markets-modal">
-            <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-            <h2>Prediction Markets</h2>
-
-            {/* Wallet status */}
-            <div className="wallet-status">
-              <span className={`wallet-dot${walletConnected ? '' : ' disconnected'}`} />
-              {walletConnected
-                ? <span>Connected · <b style={{ color: '#22A866' }}>{shortKey}</b> · Balance: <b>{tokenBalance} USDC</b></span>
-                : <span>Wallet not connected</span>
-              }
-              {!walletConnected && (
-                <button className="btn-primary" style={{ marginLeft: 'auto', padding: '8px 16px', fontSize: 13 }} onClick={connectWallet}>
-                  Connect Freighter
-                </button>
-              )}
-            </div>
-
-            {walletError && <p style={{ color: '#f87171', fontSize: 13, marginBottom: 14 }}>{walletError}</p>}
-            {statusMsg && <p style={{ color: '#22A866', fontSize: 13, marginBottom: 14 }}>{statusMsg}</p>}
-
-            {/* Bet amount input */}
-            {walletConnected && (
-              <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 13, opacity: .7 }}>Bet amount (USDC):</span>
-                <input
-                  type="number"
-                  value={betAmount}
-                  onChange={e => setBetAmount(e.target.value)}
-                  style={{
-                    background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.15)',
-                    color: '#fff', padding: '8px 12px', borderRadius: 8, fontSize: 13, width: 100
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Market card */}
-            {marketState ? (
-              <div className="market-card">
-                <h3>Market #{marketState.id.toString()}</h3>
-                <div className="market-meta">
-                  <span>📅 Resolves: {new Date(Number(marketState.resolution_time) * 1000).toLocaleDateString()}</span>
-                  <span>📊 {MarketStatus[marketState.status]}</span>
-                </div>
-                <div style={{ fontSize: 12, opacity: .6, marginBottom: 12 }}>
-                  Yes pool: {fromRawAmount(marketState.yes_reserves)} · No pool: {fromRawAmount(marketState.no_reserves)}
-                </div>
-                <div className="market-outcomes">
-                  {(['Yes', 'No'] as const).map((label, i) => (
-                    <button
-                      key={i}
-                      className="outcome-btn"
-                      onClick={() => placeBet(i)}
-                      disabled={!walletConnected || marketState.status !== MarketStatus.Open}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="market-card" style={{ opacity: .6, textAlign: 'center', padding: 40 }}>
-                {walletConnected ? 'Loading market data…' : 'Connect wallet to view live markets'}
-              </div>
-            )}
-
-            {/* Demo market cards */}
-            {[
-              { title: 'Fed Rate Decision — March 2025', meta: 'Economics · Closes Mar 20', outcomes: ['No Change (88%)', '25bps Cut (12%)'] },
-              { title: 'Super Bowl LX Winner', meta: 'Sports · Closes Feb 8', outcomes: ['Eagles (70%)', 'Chiefs (30%)'] },
-              { title: 'BTC above $100K by Q2 2025?', meta: 'Crypto · Closes Jun 30', outcomes: ['Yes (55%)', 'No (45%)'] },
-            ].map((m, i) => (
-              <div className="market-card" key={i}>
-                <h3>{m.title}</h3>
-                <div className="market-meta"><span>{m.meta}</span></div>
-                <div className="market-outcomes">
-                  {m.outcomes.map((o, j) => (
-                    <button key={j} className="outcome-btn" onClick={() => walletConnected ? placeBet(j) : connectWallet()}>
-                      {o}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <Footer />
     </>
   );
 }
