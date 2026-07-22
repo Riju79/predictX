@@ -6,6 +6,10 @@ use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env};
 pub enum Outcome {
     Yes = 0,
     No = 1,
+    OptionC = 2,
+    OptionD = 3,
+    OptionE = 4,
+    OptionF = 5,
 }
 
 #[contracttype]
@@ -36,6 +40,7 @@ pub enum DataKey {
     Market(u64),
     UserYesBalance(Address, u64),
     UserNoBalance(Address, u64),
+    UserOutcomeBalance(Address, u64, u32),
 }
 
 #[contract]
@@ -45,6 +50,7 @@ fn get_user_balance(env: &Env, user: &Address, market_id: u64, outcome: Outcome)
     let key = match outcome {
         Outcome::Yes => DataKey::UserYesBalance(user.clone(), market_id),
         Outcome::No => DataKey::UserNoBalance(user.clone(), market_id),
+        other => DataKey::UserOutcomeBalance(user.clone(), market_id, other as u32),
     };
     env.storage().persistent().get(&key).unwrap_or(0i128)
 }
@@ -53,6 +59,7 @@ fn set_user_balance(env: &Env, user: &Address, market_id: u64, outcome: Outcome,
     let key = match outcome {
         Outcome::Yes => DataKey::UserYesBalance(user.clone(), market_id),
         Outcome::No => DataKey::UserNoBalance(user.clone(), market_id),
+        other => DataKey::UserOutcomeBalance(user.clone(), market_id, other as u32),
     };
     env.storage().persistent().set(&key, &balance);
 }
@@ -136,7 +143,7 @@ impl Market {
                 state.no_reserves += payment;
                 payment + s
             }
-            Outcome::No => {
+            Outcome::No | _ => {
                 let s = (state.no_reserves * payment) / (state.yes_reserves + payment);
                 state.no_reserves -= s;
                 state.yes_reserves += payment;
@@ -192,7 +199,7 @@ impl Market {
                 state.no_reserves -= c;
                 c
             }
-            Outcome::No => {
+            Outcome::No | _ => {
                 let c = (state.yes_reserves * shares) / (state.no_reserves + shares);
                 state.no_reserves += shares;
                 state.yes_reserves -= c;

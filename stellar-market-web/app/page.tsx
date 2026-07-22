@@ -2,50 +2,24 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { isConnected, requestAccess, getAddress, signTransaction } from '@stellar/freighter-api';
-import { Client as MarketClient, Outcome, MarketState, MarketStatus } from '@/src/bindings/market';
-import { Client as TokenClient } from '@/src/bindings/token';
+import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
+import { Outcome, MarketState, MarketStatus } from '@/src/bindings/market';
 import BackgroundScene from '@/components/ui/aurora-section-hero';
+import { 
+  STELLAR_CONFIG, 
+  toRawAmount as configToRawAmount, 
+  fromRawAmount as configFromRawAmount, 
+  getExpirationLedger,
+  getMarketClient, 
+  getTokenClient 
+} from '@/src/config/stellar';
 
-const MARKET_ID = "CBJTVNQSVDZG6ND2CZCMM2ES5PYDSGRDCKD4KKWM44E2XY64M42LULDB";
-const TOKEN_ID = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
-const MARKET_NUMERIC_ID = 0n; // first market ID
-const DECIMALS = 7;
+const MARKET_ID = STELLAR_CONFIG.contracts.market;
+const TOKEN_ID = STELLAR_CONFIG.contracts.token;
+const MARKET_NUMERIC_ID = 0n;
 
-
-
-const toRawAmount = (val: string) => {
-  const parsed = parseFloat(val);
-  if (isNaN(parsed) || parsed <= 0) return 0n;
-  return BigInt(Math.round(parsed * Math.pow(10, DECIMALS)));
-};
-
-const fromRawAmount = (val: bigint | number) =>
-  (Number(val) / Math.pow(10, DECIMALS)).toFixed(4);
-
-const getMarketClient = (publicKey?: string) =>
-  new MarketClient({
-    contractId: MARKET_ID,
-    rpcUrl: RPC_URL,
-    networkPassphrase: NETWORK_PASSPHRASE,
-    publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: NETWORK_PASSPHRASE })
-      : undefined,
-  });
-
-const getTokenClient = (publicKey?: string) =>
-  new TokenClient({
-    contractId: TOKEN_ID,
-    rpcUrl: RPC_URL,
-    networkPassphrase: NETWORK_PASSPHRASE,
-    publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: NETWORK_PASSPHRASE })
-      : undefined,
-  });
+const toRawAmount = (val: string) => configToRawAmount(val);
+const fromRawAmount = (val: bigint | number) => configFromRawAmount(val).toFixed(4);
 
 export default function Home() {
   // ── Wallet state ──────────────────────────────────────────────────────────
@@ -425,12 +399,13 @@ export default function Home() {
       const marketClient = getMarketClient(publicKey);
       const tokenClient = getTokenClient(publicKey);
       const raw = toRawAmount(betAmount);
-      // Approve the market contract to spend tokens
+      // Approve the market contract to spend tokens with dynamic ledger expiration
+      const expLedger = await getExpirationLedger();
       const approveTx = await tokenClient.approve({
         from: publicKey,
         spender: MARKET_ID,
         amount: raw,
-        expiration_ledger: 999999,
+        expiration_ledger: expLedger,
       });
       await approveTx.signAndSend();
       // Buy shares for the chosen outcome
@@ -894,9 +869,9 @@ export default function Home() {
                 Back your favorite countries, predict brackets, and win from pools settled instantly on the Stellar network.
               </p>
               <div style={{ marginTop: '10px' }}>
-                <Link href="/app" className="funded-btn" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <a href="#hero" className="funded-btn" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                   Predict World Cup Now
-                </Link>
+                </a>
               </div>
               <ul className="perks" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '15px' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#e5e7eb', fontSize: '14px' }}>
@@ -1091,9 +1066,9 @@ export default function Home() {
             <a href="#">Instagram</a>
             <a href="#">X</a>
           </div>
-          <Link href="/app" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 'fit-content' }}>
+          <a href="#hero" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 'fit-content' }}>
             Start trading
-          </Link>
+          </a>
         </div>
         <div className="footer-bottom">
           <p>Risk warning: Perpetual and prediction-market trading, especially with leverage, is high risk. Losses may exceed deposits. This is not investment advice. Results are not guaranteed.</p>
