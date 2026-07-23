@@ -319,6 +319,28 @@ interface ToastMessage {
 export default function AppDashboard() {
   const [activeRoute, setActiveRoute] = useState<'markets' | 'perps' | 'live' | 'market-detail'>('markets');
   const [activeCategory, setActiveCategory] = useState('Trending');
+
+  // Read URL query parameters for tab selection & category filtering (e.g. ?category=Sports or ?tab=perps)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const categoryParam = params.get('category');
+
+      if (tabParam === 'perps') {
+        setActiveRoute('perps');
+      } else if (tabParam === 'live') {
+        setActiveRoute('live');
+      } else if (tabParam === 'markets') {
+        setActiveRoute('markets');
+      }
+
+      if (categoryParam) {
+        setActiveCategory(categoryParam);
+        setActiveRoute('markets');
+      }
+    }
+  }, []);
   const [markets, setMarkets] = useState<Market[]>(INITIAL_MARKETS);
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [walletBalance, setWalletBalance] = useState(2480.12);
@@ -763,6 +785,8 @@ export default function AppDashboard() {
             market={selectedMarket}
             onBack={() => setActiveRoute('markets')}
             walletBalance={walletBalance}
+            walletConnected={walletConnected}
+            onConnectWallet={connectWallet}
             onTradeConfirm={handleTradeConfirm}
           />
         )}
@@ -770,6 +794,8 @@ export default function AppDashboard() {
         {activeRoute === 'perps' && (
           <PerpsTerminal
             walletBalance={walletBalance}
+            walletConnected={walletConnected}
+            onConnectWallet={connectWallet}
             positions={perpPositions}
             onOpenPosition={handleOpenPosition}
             onClosePosition={handleClosePosition}

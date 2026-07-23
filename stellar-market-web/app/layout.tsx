@@ -6,7 +6,12 @@ export const metadata: Metadata = {
   description:
     "The first prediction market platform with funded accounts — trade elections, sports, crypto and more, settled instantly on Stellar via Soroban smart contracts.",
   icons: {
-    icon: "/logo.png",
+    icon: [
+      { url: "/icon.png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
@@ -18,6 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/icon.png" type="image/png" />
+        <link rel="shortcut icon" href="/icon.png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

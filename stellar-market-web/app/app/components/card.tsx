@@ -81,7 +81,7 @@ export default function PolymarketCard({ market, onSelectMarket }: PolymarketCar
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '4px 0' }}>
         {outcomes.slice(0, 3).map((o, idx) => {
           const isLeading = idx === 0;
-          const underlineColor = isLeading ? '#10B981' : idx === 1 ? '#3B82F6' : 'transparent';
+          const underlineColor = isLeading ? '#818cf8' : idx === 1 ? '#c7d2fe' : 'transparent';
           const multiplier = (100 / Math.max(o.probability, 1)).toFixed(2) + 'x';
 
           return (
@@ -120,11 +120,11 @@ export default function PolymarketCard({ market, onSelectMarket }: PolymarketCar
                 {o.score !== undefined ? o.score : multiplier}
               </div>
 
-              {/* Right: Oval Green Pill Odds Badge */}
+              {/* Right: Oval Periwinkle Pill Odds Badge */}
               <div style={{
                 padding: '4px 14px', borderRadius: 20,
-                border: '1px solid rgba(16, 185, 129, 0.45)',
-                background: 'rgba(16, 185, 129, 0.06)',
+                border: '1px solid rgba(129, 140, 248, 0.45)',
+                background: 'rgba(129, 140, 248, 0.08)',
                 color: '#FFFFFF', fontSize: 13, fontWeight: 700, fontFamily: fontMono,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 minWidth: 54, textAlign: 'center',

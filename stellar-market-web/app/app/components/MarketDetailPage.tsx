@@ -9,6 +9,8 @@ interface MarketDetailPageProps {
   market: Market;
   onBack: () => void;
   walletBalance: number;
+  walletConnected?: boolean;
+  onConnectWallet?: () => void;
   onTradeConfirm: (
     marketId: string,
     outcomeId: string,
@@ -22,6 +24,8 @@ export default function MarketDetailPage({
   market,
   onBack,
   walletBalance,
+  walletConnected = false,
+  onConnectWallet,
   onTradeConfirm,
 }: MarketDetailPageProps) {
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(
@@ -214,6 +218,10 @@ export default function MarketDetailPage({
 
   const handleTradeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!walletConnected && onConnectWallet) {
+      onConnectWallet();
+      return;
+    }
     if (numAmount <= 0 || !selectedOutcome) return;
     if (numAmount > walletBalance) {
       alert('Insufficient wallet balance!');
@@ -263,6 +271,10 @@ export default function MarketDetailPage({
 
     const handlePlacePerpOrder = (e: React.FormEvent) => {
       e.preventDefault();
+      if (!walletConnected && onConnectWallet) {
+        onConnectWallet();
+        return;
+      }
       if (cost <= 0) return;
       if (cost > walletBalance) {
         alert("Insufficient wallet balance for this trade cost!");
@@ -298,11 +310,6 @@ export default function MarketDetailPage({
             <span>Back to Markets</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 16, cursor: 'pointer', color: '#8991A3' }} title="Orderbook">📖</span>
-            <span style={{ fontSize: 16, cursor: 'pointer', color: '#8991A3' }} title="Help">❓</span>
-            <span style={{ fontSize: 16, cursor: 'pointer', color: '#8991A3' }} title="Share">📤</span>
-          </div>
         </div>
 
         {/* 2-Column Grid Layout: Left Chart | Right Order Form Panel */}
@@ -751,13 +758,13 @@ export default function MarketDetailPage({
               <button
                 type="submit"
                 style={{
-                  width: '100%', padding: '14px', borderRadius: 10, border: 'none',
-                  background: '#10B981', color: '#000000', fontSize: 15, fontWeight: 800,
+                  width: '100%', padding: '14px', borderRadius: 9999, border: '1px solid #ffffff',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)', color: '#090714', fontSize: 15, fontWeight: 700,
                   cursor: 'pointer', fontFamily: fontDisplay, marginTop: 4,
-                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  boxShadow: '0 0 25px rgba(199, 210, 254, 0.45)',
                 }}
               >
-                Sign up to trade
+                Trade
               </button>
             </form>
           </div>
@@ -1263,14 +1270,14 @@ export default function MarketDetailPage({
                 </div>
               )}
 
-              {/* Primary Full Width Trade Button matching screenshot */}
+              {/* Primary Full Width Trade Button */}
               <button
                 type="submit"
                 style={{
-                  width: '100%', padding: '14px', borderRadius: 10, border: 'none',
-                  background: '#00E3A1', color: '#0A0C10', fontSize: 15, fontWeight: 700,
+                  width: '100%', padding: '14px', borderRadius: 9999, border: '1px solid #ffffff',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)', color: '#090714', fontSize: 15, fontWeight: 700,
                   cursor: 'pointer', fontFamily: fontBody, marginTop: 4,
-                  boxShadow: '0 4px 14px rgba(0, 227, 161, 0.35)',
+                  boxShadow: '0 0 25px rgba(199, 210, 254, 0.45)',
                 }}
               >
                 Trade

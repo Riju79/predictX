@@ -25,17 +25,12 @@ export default function Footer() {
           {/* Column 1: Brand & Socials */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
-                alt="PredictX"
-                width={32}
-                height={32}
-                style={{ objectFit: 'contain', filter: 'invert(1) brightness(1.05)' }}
+                alt="PredictX Logo"
+                style={{ width: '30px', height: '30px', objectFit: 'contain' }}
               />
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#FFFFFF', fontFamily: fontDisplay, letterSpacing: '-.02em' }}>
-                Predict X
-              </span>
+              <span style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>PredictX</span>
             </div>
 
             {/* Social Icons matching screenshot */}

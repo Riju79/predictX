@@ -15,6 +15,8 @@ interface Position {
 
 interface PerpsTerminalProps {
   walletBalance: number;
+  walletConnected?: boolean;
+  onConnectWallet?: () => void;
   positions: Position[];
   onOpenPosition: (position: Position) => void;
   onClosePosition: (index: number, pnl: number) => void;
@@ -38,44 +40,26 @@ const INITIAL_ASSETS: PerpAsset[] = [
   {
     symbol: 'BTC', name: 'Bitcoin', leverageLimit: '6X',
     price: 66267, change: 1.66, vol24h: '$106,605,553', funding: '0.0000%',
-    sparkPoints: 'M0,15 L10,12 L20,13 L30,9 L40,6 L50,11 L60,4 L70,2 L80,5 L90,1 L100,0',
-    isUp: true, ic: '🪙'
+    sparkPoints: 'M0,15 L10,12 L20,13 L30,10 L40,8 L50,6 L60,4 L70,5 L80,3 L90,2 L100,0',
+    isUp: true, ic: '₿'
   },
   {
     symbol: 'ETH', name: 'Ethereum', leverageLimit: '4.5X',
-    price: 1919.3, change: 1.32, vol24h: '$98,075,430', funding: '0.0000%',
-    sparkPoints: 'M0,15 L10,12 L20,13 L30,10 L40,8 L50,11 L60,5 L70,3 L80,7 L90,4 L100,6',
-    isUp: true, ic: '🔷'
+    price: 3512.40, change: 2.45, vol24h: '$42,180,210', funding: '0.0000%',
+    sparkPoints: 'M0,14 L10,11 L20,12 L30,9 L40,7 L50,5 L60,3 L70,4 L80,2 L90,1 L100,0',
+    isUp: true, ic: '🔹'
   },
   {
-    symbol: 'HYPE', name: 'Hyperliquid', leverageLimit: '2.1X',
-    price: 60.448, change: -2.65, vol24h: '$7,967,780', funding: '0.0000%',
-    sparkPoints: 'M0,2 L10,3 L20,5 L30,6 L40,8 L50,9 L60,11 L70,9 L80,12 L90,14 L100,15',
-    isUp: false, ic: '🟢'
-  },
-  {
-    symbol: 'SOL', name: 'Solana', leverageLimit: '2.6X',
-    price: 77.849, change: 0.26, vol24h: '$1,940,253', funding: '0.0000%',
-    sparkPoints: 'M0,15 L10,12 L20,14 L30,9 L40,8 L50,11 L60,7 L70,4 L80,6 L90,2 L100,1',
+    symbol: 'SOL', name: 'Solana', leverageLimit: '5X',
+    price: 184.20, change: 5.12, vol24h: '$28,450,110', funding: '0.0000%',
+    sparkPoints: 'M0,15 L10,13 L20,10 L30,11 L40,7 L50,4 L60,6 L70,3 L80,2 L90,1 L100,0',
     isUp: true, ic: '☀️'
   },
   {
     symbol: 'XRP', name: 'Ripple', leverageLimit: '2.7X',
-    price: 1.1572, change: 3.84, vol24h: '$2,014,522', funding: '0.0000%',
-    sparkPoints: 'M0,15 L10,14 L20,14 L30,11 L40,9 L50,12 L60,8 L70,6 L80,7 L90,3 L100,1',
-    isUp: true, ic: '❌'
-  },
-  {
-    symbol: 'XLM', name: 'Stellar Lumens', leverageLimit: '6X',
-    price: 0.2845, change: 4.12, vol24h: '$34,905,100', funding: '0.0000%',
-    sparkPoints: 'M0,15 L10,11 L20,10 L30,8 L40,5 L50,8 L60,3 L70,1 L80,4 L90,1 L100,0',
-    isUp: true, ic: '🚀'
-  },
-  {
-    symbol: 'SUI', name: 'Sui Network', leverageLimit: '3.5X',
-    price: 2.45, change: 1.85, vol24h: '$12,410,200', funding: '0.0000%',
-    sparkPoints: 'M0,15 L10,13 L20,14 L30,10 L40,9 L50,11 L60,7 L70,5 L80,6 L90,3 L100,2',
-    isUp: true, ic: '💧'
+    price: 0.584, change: -1.24, vol24h: '$18,920,400', funding: '0.0000%',
+    sparkPoints: 'M0,2 L10,4 L20,3 L30,6 L40,8 L50,10 L60,9 L70,12 L80,11 L90,14 L100,15',
+    isUp: false, ic: '❌'
   },
   {
     symbol: 'APT', name: 'Aptos', leverageLimit: '3X',
@@ -105,6 +89,8 @@ const INITIAL_ASSETS: PerpAsset[] = [
 
 export default function PerpsTerminal({
   walletBalance,
+  walletConnected = false,
+  onConnectWallet,
   positions,
   onOpenPosition,
   onClosePosition,
@@ -158,6 +144,9 @@ export default function PerpsTerminal({
   };
 
   const openOrderForm = (asset: PerpAsset, type: 'Long' | 'Short') => {
+    if (!walletConnected && onConnectWallet) {
+      onConnectWallet();
+    }
     setTradingAsset(asset);
     setTradeChoice(type);
     setSizeInput('500');
@@ -168,6 +157,10 @@ export default function PerpsTerminal({
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!walletConnected && onConnectWallet) {
+      onConnectWallet();
+      return;
+    }
     if (!tradingAsset) return;
     const size = parseFloat(sizeInput) || 0;
     if (size <= 0) return;
@@ -192,73 +185,122 @@ export default function PerpsTerminal({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 10 }}>
 
-      {/* ── TOP HERO BANNER matching reference screenshot ── */}
+      {/* ── UNDERSTANDING PERPETUALS HERO BANNER ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #051A13 0%, #030D0A 100%)',
-        border: '1px solid rgba(0, 227, 161, 0.28)', borderRadius: 16,
-        padding: '24px 30px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(135deg, #0c081d 0%, #040308 100%)',
+        border: '1px solid rgba(129, 140, 248, 0.35)',
+        borderRadius: 16,
+        padding: '24px 30px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 30px rgba(124, 58, 237, 0.15)',
       }}>
-        {/* Glow backdrop */}
+        {/* Glow backdrop on left */}
         <div style={{
-          position: 'absolute', top: -50, left: -50,
-          width: 150, height: 150, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0,227,161,0.3) 0%, transparent 70%)',
+          position: 'absolute', top: -40, left: -40,
+          width: 160, height: 160, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(129, 140, 248, 0.25) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: '65%', zIndex: 1 }}>
-          <h2 style={{ fontFamily: fontDisplay, fontSize: 22, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
-            Perpetuals: Up or Down?
+        {/* Left Content */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: '62%', zIndex: 1 }}>
+          <h2 style={{ fontFamily: fontDisplay, fontSize: 20, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+            Understanding Perpetuals
           </h2>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#7F9087', fontFamily: fontBody, lineHeight: 1.5 }}>
+          <p style={{ margin: 0, fontSize: 13.5, color: '#a5b4fc', fontFamily: fontBody, lineHeight: 1.5 }}>
             Trade prices up or down, with up to 6x leverage and no expiration.
           </p>
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <button style={{
-              background: '#00E3A1', color: '#0A0C10', border: 'none',
-              padding: '9px 18px', borderRadius: 20, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: fontBody,
+              background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)',
+              color: '#090714',
+              border: '1px solid #ffffff',
+              padding: '9px 22px',
+              borderRadius: 9999,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: fontBody,
+              boxShadow: '0 0 20px rgba(199, 210, 254, 0.4)',
+              transition: 'all 0.2s ease',
             }}>
               Get started
             </button>
             <button style={{
-              background: 'transparent', color: '#00E3A1', border: '1px solid rgba(0, 227, 161, 0.5)',
-              padding: '8px 18px', borderRadius: 20, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: fontBody,
+              background: 'transparent',
+              color: '#c7d2fe',
+              border: '1px solid rgba(199, 210, 254, 0.4)',
+              padding: '9px 22px',
+              borderRadius: 9999,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: fontBody,
+              transition: 'all 0.2s ease',
             }}>
               Learn about Perps
             </button>
           </div>
         </div>
 
-        {/* Dynamic Leverage Preview Graphic matching screenshot */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', zIndex: 1 }}>
-          {/* ETH Badge */}
+        {/* Right Content: Crypto Leverage Badges (Stacked vertically matching screenshot) */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          gap: 6,
+          zIndex: 1,
+          marginRight: -10,
+        }}>
+          {/* Top Pill (Faded ETH) */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, background: '#111827',
-            padding: '4px 10px', borderRadius: 14, fontSize: 11, fontWeight: 700,
-            color: '#6C7E8B', fontFamily: fontMono, opacity: 0.8, border: '1px solid #1F2937'
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(14, 10, 31, 0.8)',
+            padding: '4px 14px', borderRadius: 9999,
+            fontSize: 12, fontWeight: 700, color: '#818cf8',
+            border: '1px solid rgba(129, 140, 248, 0.2)',
+            opacity: 0.5, fontFamily: fontMono,
           }}>
-            <span style={{ color: '#3B82F6' }}>🔹</span> ETH 4.5X
+            <span>🔹</span> ⚡ 4.5X
           </div>
-          {/* BTC Main Large Badge */}
+
+          {/* Middle Main Pill (Glowing BTC) */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, background: '#0F172A',
-            padding: '8px 18px', borderRadius: 22, fontSize: 15, fontWeight: 800,
-            color: '#00E3A1', fontFamily: fontMono, border: '1.5px solid #00E3A1',
-            boxShadow: '0 0 16px rgba(0, 227, 161, 0.45)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: '#090714',
+            padding: '8px 22px', borderRadius: 9999,
+            fontSize: 18, fontWeight: 800, color: '#818cf8',
+            border: '1.5px solid #818cf8',
+            boxShadow: '0 0 25px rgba(129, 140, 248, 0.5)',
+            fontFamily: fontMono,
           }}>
-            <span style={{ fontSize: 16, display: 'inline-flex', width: 16, height: 16, background: '#F59E0B', borderRadius: '50%', color: '#000', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>₿</span> BTC 6X
+            <span style={{
+              width: 22, height: 22, borderRadius: '50%',
+              background: '#f59e0b', color: '#000000',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 800, fontSize: 13,
+            }}>
+              ₿
+            </span>
+            <span>⚡ 6X</span>
           </div>
-          {/* XRP Badge */}
+
+          {/* Bottom Pill (Faded XRP) */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, background: '#111827',
-            padding: '4px 10px', borderRadius: 14, fontSize: 11, fontWeight: 700,
-            color: '#6C7E8B', fontFamily: fontMono, opacity: 0.8, border: '1px solid #1F2937'
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(14, 10, 31, 0.8)',
+            padding: '4px 14px', borderRadius: 9999,
+            fontSize: 12, fontWeight: 700, color: '#818cf8',
+            border: '1px solid rgba(129, 140, 248, 0.2)',
+            opacity: 0.5, fontFamily: fontMono,
           }}>
-            <span style={{ color: '#EF4444' }}>❌</span> XRP 2.7X
+            <span>❌</span> ⚡ 2.7X
           </div>
         </div>
       </div>
@@ -438,121 +480,212 @@ export default function PerpsTerminal({
         </div>
       )}
 
-      {/* ── Slide-Out Interactive Order Entry Panel / Overlay ── */}
+      {/* ── Slide-Out Interactive Order Entry Panel / Overlay matching screenshot ── */}
       {tradingAsset && (
         <div style={{
-          position: 'fixed', top: 0, right: 0, width: 340, height: '100vh',
-          background: 'rgba(18,22,30,0.95)', borderLeft: '1px solid #1F2532',
-          backdropFilter: 'blur(16px)', zIndex: 1000, padding: 24,
-          boxShadow: '-8px 0 32px rgba(0,0,0,0.6)', display: 'flex',
-          flexDirection: 'column', gap: 20,
+          position: 'fixed', top: 0, right: 0, width: 360, height: '100vh',
+          background: '#090714', borderLeft: '1px solid #1a152e',
+          backdropFilter: 'blur(16px)', zIndex: 1000, padding: '24px 22px',
+          boxShadow: '-12px 0 40px rgba(0,0,0,0.8)', display: 'flex',
+          flexDirection: 'column', gap: 18, overflowY: 'auto',
         }}>
+          {/* Top Bar with Close Button */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ fontFamily: fontDisplay, fontSize: 16, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
-              Place Perps Order
-            </h4>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#818cf8', letterSpacing: '0.5px', textTransform: 'uppercase', fontFamily: fontMono }}>
+              PERPETUAL CONTRACT
+            </span>
             <button
               onClick={() => setTradingAsset(null)}
-              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 20, cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 22, cursor: 'pointer' }}
             >
-              ×
+              ✕
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #1F2532', paddingBottom: 14 }}>
+          {/* Header: Icon + Title + Direction */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #1a152e', paddingBottom: 14 }}>
             <div style={{
-              width: 34, height: 34, borderRadius: 8, background: '#1E293B',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+              width: 40, height: 40, borderRadius: '50%',
+              background: tradingAsset.symbol === 'BTC' ? '#F59E0B' : tradingAsset.symbol === 'ETH' ? '#3B82F6' : '#1E293B',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+              color: '#FFFFFF', fontWeight: 'bold'
             }}>
-              {tradingAsset.ic}
+              {tradingAsset.symbol === 'BTC' ? '₿' : tradingAsset.ic}
             </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', fontFamily: fontDisplay }}>
-                {tradingAsset.symbol}-PERP
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontFamily: fontDisplay, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {tradingAsset.symbol} Perpetual Contract
               </div>
-              <div style={{ fontSize: 11.5, color: '#64748B', fontFamily: fontBody }}>
-                Price: ${tradingAsset.price.toLocaleString()}
+              <div style={{ fontSize: 14, fontWeight: 800, color: tradeChoice === 'Long' ? '#10B981' : '#EF4444', fontFamily: fontBody }}>
+                {tradeChoice === 'Long' ? 'UP' : 'DOWN'}
               </div>
             </div>
           </div>
 
           <form onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: 12.5 }}>
-              <span>Direction</span>
-              <span style={{ color: tradeChoice === 'Long' ? '#10B981' : '#EF4444', fontWeight: 700 }}>
-                {tradeChoice === 'Long' ? 'LONG (UP)' : 'SHORT (DOWN)'}
-              </span>
+            {/* OPEN / CLOSE Tabs & Market dropdown */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <button
+                  type="button"
+                  style={{
+                    background: 'none', border: 'none', color: '#FFFFFF',
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: fontDisplay,
+                    borderBottom: '2px solid #10B981', paddingBottom: 4
+                  }}
+                >
+                  OPEN
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    background: 'none', border: 'none', color: '#64748B',
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: fontDisplay,
+                    paddingBottom: 4
+                  }}
+                >
+                  CLOSE
+                </button>
+              </div>
+
+              <div style={{ fontSize: 12.5, color: '#94A3B8', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span>Market</span> <span>∨</span>
+              </div>
             </div>
 
-            {/* Position Size Input */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: 12 }}>
-                <span>Position Size</span>
-                <span>Balance: ${walletBalance.toFixed(2)}</span>
-              </div>
-              <div style={{
-                display: 'flex', alignItems: 'center', background: '#161B24',
-                border: '1px solid #2B3242', borderRadius: 8, padding: '10px 14px',
-              }}>
-                <span style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', marginRight: 4 }}>$</span>
+            {/* UP / DOWN Direction Toggle Buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setTradeChoice('Long')}
+                style={{
+                  padding: '12px', borderRadius: 8, border: 'none',
+                  background: tradeChoice === 'Long' ? '#10B981' : '#161B26',
+                  color: tradeChoice === 'Long' ? '#000000' : '#94A3B8',
+                  fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: fontDisplay,
+                  transition: 'all 0.15s',
+                }}
+              >
+                UP
+              </button>
+              <button
+                type="button"
+                onClick={() => setTradeChoice('Short')}
+                style={{
+                  padding: '12px', borderRadius: 8, border: 'none',
+                  background: tradeChoice === 'Short' ? '#EF4444' : '#161B26',
+                  color: tradeChoice === 'Short' ? '#FFFFFF' : '#94A3B8',
+                  fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: fontDisplay,
+                  transition: 'all 0.15s',
+                }}
+              >
+                DOWN
+              </button>
+            </div>
+
+            {/* Perpetual Account Balance */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: 12.5 }}>
+              <span>Perpetual account</span>
+              <span style={{ color: '#E2E8F0', fontWeight: 600 }}>${walletBalance.toFixed(2)} available</span>
+            </div>
+
+            {/* Cost Input Box */}
+            <div style={{
+              position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: '#0d111a', border: '1px solid #1f2838', borderRadius: 10, padding: '12px 16px',
+            }}>
+              <span style={{ fontSize: 14, color: '#8991A3', fontWeight: 600 }}>Cost</span>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', marginRight: 4 }}>$</span>
                 <input
                   type="number"
                   value={sizeInput}
                   onChange={e => setSizeInput(e.target.value)}
                   style={{
-                    width: '100%', background: 'transparent', border: 'none',
-                    outline: 'none', color: '#FFFFFF', fontSize: 20, fontWeight: 700,
+                    width: 90, background: 'transparent', border: 'none',
+                    outline: 'none', color: '#FFFFFF', fontSize: 20, fontWeight: 800,
                     textAlign: 'right', fontFamily: fontMono,
                   }}
                 />
               </div>
             </div>
 
-            {/* Leverage Slider */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: 12 }}>
-                <span>Leverage</span>
-                <span style={{ color: '#00E3A1', fontWeight: 700 }}>{customLeverage}x</span>
+            {/* Percentage Preset Buttons (25%, 50%, Max) */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[0.25, 0.5, 1].map((pct, idx) => {
+                const label = pct === 1 ? 'Max' : `${pct * 100}%`;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSizeInput((walletBalance * pct).toFixed(2))}
+                    style={{
+                      flex: 1, padding: '7px', borderRadius: 8,
+                      border: '1px solid #1f2838', background: '#161B26',
+                      color: '#CBD5E1', fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', fontFamily: fontMono,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Leverage Dropdown */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1a152e', paddingTop: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: 13.5, color: '#FFFFFF', fontWeight: 700 }}>Leverage</span>
+                <span style={{ fontSize: 11, color: '#64748B' }}>Liquidates at -</span>
               </div>
-              <input
-                type="range"
-                min="1"
-                max={tradingAsset.leverageLimit.replace('X', '')}
+
+              <select
                 value={customLeverage}
-                onChange={e => setCustomLeverage(parseInt(e.target.value))}
-                style={{ width: '100%', accentColor: '#00E3A1' }}
+                onChange={e => setCustomLeverage(parseFloat(e.target.value))}
+                style={{
+                  background: '#161B26', border: '1px solid #1f2838',
+                  color: '#FFFFFF', padding: '6px 14px', borderRadius: 8,
+                  fontSize: 13, fontWeight: 700, outline: 'none', cursor: 'pointer'
+                }}
+              >
+                <option value="1.5">1.5x</option>
+                <option value="2">2.0x</option>
+                <option value="3.5">3.5x</option>
+                <option value="5">5.0x</option>
+                <option value="6">6.0x</option>
+              </select>
+            </div>
+
+            {/* Take profit / Stop loss Checkbox */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1a152e', paddingTop: 14 }}>
+              <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 600 }}>Take profit / Stop loss</span>
+              <input
+                type="checkbox"
+                defaultChecked={false}
+                style={{ width: 18, height: 18, accentColor: '#10B981', cursor: 'pointer' }}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#64748B', fontFamily: fontMono }}>
-                <span>1X</span>
-                <span>{tradingAsset.leverageLimit} Limit</span>
-              </div>
             </div>
 
-            {/* Estimation Summary */}
-            <div style={{
-              background: '#161B24', border: '1px solid #1F2532', borderRadius: 8,
-              padding: 12, fontSize: 12, fontFamily: fontMono, display: 'flex',
-              flexDirection: 'column', gap: 6,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
-                <span>Free Margin Cost</span>
-                <span style={{ color: '#FFFFFF' }}>${( (parseFloat(sizeInput) || 0) / customLeverage ).toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
-                <span>Maintenance Margin</span>
-                <span style={{ color: '#FFFFFF' }}>${( ( (parseFloat(sizeInput) || 0) / customLeverage ) * 0.5 ).toFixed(2)}</span>
-              </div>
+            {/* Total Size Summary */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderTop: '1px solid #1a152e', paddingTop: 14 }}>
+              <span style={{ fontSize: 12.5, color: '#64748B' }}>Total size ({customLeverage}x) ⓘ</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', fontFamily: fontMono }}>
+                ${((parseFloat(sizeInput) || 0) * customLeverage).toFixed(2)}
+              </span>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               style={{
-                width: '100%', padding: '14px', borderRadius: 10, border: 'none',
-                background: '#00E3A1', color: '#0A0C10', fontSize: 14, fontWeight: 700,
-                cursor: 'pointer', fontFamily: fontBody, marginTop: 10,
+                width: '100%', padding: '14px', borderRadius: 9999, border: '1px solid #ffffff',
+                background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)', color: '#090714', fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', fontFamily: fontDisplay, marginTop: 4,
+                boxShadow: '0 0 25px rgba(199, 210, 254, 0.45)',
               }}
             >
-              Open {tradeChoice} Position
+              Trade
             </button>
           </form>
         </div>

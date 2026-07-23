@@ -35,6 +35,8 @@ interface TradingDrawerProps {
   market: Market | null;
   onClose: () => void;
   walletBalance: number;
+  walletConnected?: boolean;
+  onConnectWallet?: () => void;
   currency?: 'XLM' | 'USDC';
   onTradeConfirm: (
     marketId: string,
@@ -49,6 +51,8 @@ export default function TradingDrawer({
   market,
   onClose,
   walletBalance,
+  walletConnected = false,
+  onConnectWallet,
   currency = 'XLM',
   onTradeConfirm,
 }: TradingDrawerProps) {
@@ -65,23 +69,23 @@ export default function TradingDrawer({
     }
   }, [market]);
 
-  if (!market || !market.outcomes || market.outcomes.length === 0) return null;
+  if (!market) return null;
 
   const selectedOutcome = market.outcomes.find(o => o.id === selectedOutcomeId) || market.outcomes[0];
-  const pricePerShare = Math.max(0.01, selectedOutcome.probability / 100);
   const investment = parseFloat(amountVal) || 0;
-  const sharesReceived = pricePerShare > 0 ? Math.floor((investment / pricePerShare) * 100) / 100 : 0;
-  const potentialPayout = sharesReceived * 1.0; // 1 USDC per winning share
-  const estReturnPct = investment > 0 ? (((potentialPayout - investment) / investment) * 100).toFixed(1) : '0';
-  const transactionFee = parseFloat((investment * 0.005).toFixed(4)); // 0.5% fee on Stellar
+  const currentPrice = (selectedOutcome.probability / 100);
+  const pricePerShare = currentPrice;
+  const sharesReceived = currentPrice > 0 ? investment / currentPrice : 0;
+  const potentialPayout = sharesReceived * 1;
+  const estReturnPct = currentPrice > 0 ? Math.round(((1 / currentPrice) - 1) * 100) : 0;
+  const transactionFee = 0.00001;
 
   const handleConfirm = () => {
-    if (investment <= 0) return;
-    if (investment > walletBalance) {
-      alert("Insufficient wallet balance!");
+    if (!walletConnected && onConnectWallet) {
+      onConnectWallet();
       return;
     }
-
+    if (!market || !selectedOutcome) return;
     setTxState('loading');
     setTimeout(() => {
       setTxState('success');

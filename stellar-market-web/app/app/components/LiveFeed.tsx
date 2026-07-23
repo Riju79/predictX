@@ -197,7 +197,7 @@ export default function LiveFeed({ markets, onSelectMarket }: LiveFeedProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 700, color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+              <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 10px #818cf8' }} />
               Live Active Markets
             </h3>
           </div>

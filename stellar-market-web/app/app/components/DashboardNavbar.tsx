@@ -24,14 +24,15 @@ interface DashboardNavbarProps {
 function btnStyle(primary: boolean): React.CSSProperties {
   return {
     display: 'inline-flex', alignItems: 'center', gap: 6,
-    padding: '9px 16px', borderRadius: 8,
-    border: `1px solid ${primary ? t.accent : t.line}`,
-    background: primary ? t.accent : t.surface,
-    color: primary ? '#fff' : t.text,
-    fontSize: '13.5px', fontWeight: 600,
+    padding: '9px 18px', borderRadius: 9999,
+    border: primary ? '1px solid #ffffff' : `1px solid ${t.line}`,
+    background: primary ? 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)' : t.surface,
+    color: primary ? '#090714' : t.text,
+    fontSize: '13.5px', fontWeight: 700,
     cursor: 'pointer', whiteSpace: 'nowrap',
     fontFamily: fontBody,
-    transition: 'border-color .15s, transform .1s',
+    boxShadow: primary ? '0 0 20px rgba(199, 210, 254, 0.45)' : 'none',
+    transition: 'all .2s ease',
   };
 }
 
@@ -81,28 +82,16 @@ export default function DashboardNavbar({
 
         {/* ── LEFT: Brand + Nav links ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 22, flex: '0 0 auto' }}>
-          {/* Brand */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            fontFamily: fontDisplay, fontWeight: 900, fontSize: 26,
-            letterSpacing: '-.03em', color: t.text,
-            userSelect: 'none',
+            display: 'flex', alignItems: 'center', gap: 10,
+            cursor: 'pointer', userSelect: 'none'
           }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 10,
-              background: 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden', flexShrink: 0,
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="PredictX"
-                width={38} height={38}
-                style={{ objectFit: 'contain', filter: 'invert(1) brightness(1.05)' }}
-              />
-            </div>
-            Predict X
+            <img
+              src="/logo.png"
+              alt="PredictX Logo"
+              style={{ width: '34px', height: '34px', objectFit: 'contain' }}
+            />
+            <span style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>PredictX</span>
           </div>
 
           {/* Nav links */}
