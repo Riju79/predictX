@@ -1,6 +1,9 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { ConnectWalletButton } from '@/src/wallet';
 import { t, fontBody, fontDisplay, fontMono } from '../tokens';
 
 import { Market } from './TradingDrawer';
@@ -82,9 +85,9 @@ export default function DashboardNavbar({
 
         {/* ── LEFT: Brand + Nav links ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 22, flex: '0 0 auto' }}>
-          <div style={{
+          <Link href="/" style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            cursor: 'pointer', userSelect: 'none'
+            cursor: 'pointer', userSelect: 'none', textDecoration: 'none'
           }}>
             <img
               src="/logo.png"
@@ -92,7 +95,7 @@ export default function DashboardNavbar({
               style={{ width: '34px', height: '34px', objectFit: 'contain' }}
             />
             <span style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>PredictX</span>
-          </div>
+          </Link>
 
           {/* Nav links */}
           <nav style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -144,8 +147,8 @@ export default function DashboardNavbar({
               width="15" height="15" viewBox="0 0 24 24"
               fill="none" stroke={t.text} strokeWidth="2"
             >
-              <circle cx="11" cy="11" r="7"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               value={searchVal}
@@ -211,46 +214,16 @@ export default function DashboardNavbar({
             style={btnStyle(true)}
             onClick={onCreateMarketClick}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#6D8AFF'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = t.accent;  }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = t.accent; }}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-              <path d="M12 5v14M5 12h14"/>
+              stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
             </svg>
             Create Market
           </button>
 
-          <button
-            onClick={walletConnected ? onWalletClick : (onConnectWallet || onWalletClick)}
-            style={{ ...btnStyle(false), gap: 8 }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = '#38404F';
-              (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = t.line;
-              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-            }}
-          >
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: walletConnected ? t.up : t.textDim,
-              boxShadow: walletConnected ? `0 0 6px ${t.up}` : 'none',
-              display: 'inline-block', flexShrink: 0,
-            }} />
-            {walletConnected ? (
-              <>
-                <span style={{ fontFamily: fontMono, fontWeight: 700 }}>
-                  {walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
-                </span>
-                <span style={{ color: t.textDim, fontSize: 11.5 }}>
-                  ({publicKey ? `${publicKey.slice(0, 4)}...${publicKey.slice(-4)}` : 'Connected'})
-                </span>
-              </>
-            ) : (
-              <span>Connect Wallet</span>
-            )}
-          </button>
+          <ConnectWalletButton />
 
           {/* Currency Toggle Switcher (XLM / USDC) */}
           <button

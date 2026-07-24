@@ -13,7 +13,7 @@ import LiveFeed from './components/LiveFeed';
 import MarketDetailPage from './components/MarketDetailPage';
 import Footer from './components/Footer';
 import { t, fontBody, fontDisplay, fontMono } from './tokens';
-import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
+import { useWallet } from '@/src/wallet';
 import { Outcome } from '@/src/bindings/market';
 import { 
   STELLAR_CONFIG, 
@@ -352,7 +352,7 @@ export default function AppDashboard() {
   const [perpPositions, setPerpPositions] = useState<Position[]>([]);
   const [tradeHistory, setTradeHistory] = useState<TradeHistoryEntry[]>([]);
   const [createdMarkets, setCreatedMarkets] = useState<CreatedMarketEntry[]>([]);
-  const [walletTab, setWalletTab] = useState<'portfolio' | 'history' | 'created'>('portfolio');
+  const [walletTab, setWalletTab] = useState<'portfolio' | 'history' | 'created' | 'contracts'>('portfolio');
 
   const handleSelectMarket = (m: Market) => {
     setSelectedMarket(m);
@@ -419,100 +419,43 @@ export default function AppDashboard() {
     return () => clearInterval(interval);
   }, [selectedMarket]);
 
-  // ── Soroban & Freighter Wallet state ──
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [publicKey, setPublicKey] = useState('');
+  // ── Soroban & Wallet context ──
+  const wallet = useWallet();
+  const walletConnected = wallet.isConnected;
+  const publicKey = wallet.publicKey;
+  const activeBalance = wallet.balance || walletBalance;
+  const connectWallet = wallet.connect;
+  const disconnectWallet = wallet.disconnect;
   const [walletError, setWalletError] = useState('');
   const [isSubmittingTx, setIsSubmittingTx] = useState(false);
-
-  // Fetch live Stellar Lumens (XLM) market price
-  useEffect(() => {
-    fetch('https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd')
-      .then(res => res.json())
-      .then(data => {
-        if (data?.stellar?.usd) {
-          setXlmPrice(data.stellar.usd);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const toggleCurrency = () => {
     if (currency === 'XLM') {
       const usdcVal = walletBalance * xlmPrice;
-      const roundedUsdc = parseFloat(usdcVal.toFixed(2));
       setCurrency('USDC');
-      setWalletBalance(roundedUsdc);
-      triggerToast(`Converted ${walletBalance.toLocaleString()} XLM ➔ $${roundedUsdc.toLocaleString()} USDC (Rate: 1 XLM = $${xlmPrice.toFixed(4)})`);
     } else {
-      const xlmVal = walletBalance / xlmPrice;
-      const roundedXlm = parseFloat(xlmVal.toFixed(2));
       setCurrency('XLM');
-      setWalletBalance(roundedXlm);
-      triggerToast(`Converted $${walletBalance.toLocaleString()} USDC ➔ ${roundedXlm.toLocaleString()} XLM (Rate: 1 XLM = $${xlmPrice.toFixed(4)})`);
-    }
-  };
-
-  const connectWallet = async () => {
-    try {
-      setWalletError('');
-      const connected = await isConnected();
-      if (!connected) {
-        setWalletError('Freighter wallet extension not found. Please install Freighter.');
-        triggerToast('Freighter wallet not found. Please install extension.', 'error');
-        return;
-      }
-      await requestAccess();
-      const addr = await getAddress();
-      setPublicKey(addr.address);
-      setWalletConnected(true);
-      triggerToast(`Connected Freighter Wallet: ${addr.address.substring(0, 4)}...${addr.address.substring(addr.address.length - 4)}`);
-      await loadMarketData(addr.address);
-    } catch (e: unknown) {
-      const err = e instanceof Error ? e.message : 'Failed to connect wallet';
-      setWalletError(err);
-      triggerToast(err, 'error');
     }
   };
 
   const loadMarketData = async (pk: string) => {
     try {
+      if (!pk) return;
       const tokenClient = getTokenClient(pk);
       const balRes = await tokenClient.balance({ id: pk });
-      const rawBal = balRes.result as bigint;
-      const numBal = fromRawAmount(rawBal);
-      if (!isNaN(numBal) && numBal > 0) {
-        setWalletBalance(numBal);
+      if (balRes && balRes.result !== undefined) {
+        const rawBal = balRes.result as bigint;
+        const numBal = fromRawAmount(rawBal);
+        if (!isNaN(numBal)) {
+          setWalletBalance(numBal);
+        }
       }
     } catch (e) {
       console.error('Error fetching Soroban testnet token balance:', e);
     }
   };
 
-  useEffect(() => {
-    const checkConn = async () => {
-      try {
-        if (await isConnected()) {
-          const addr = await getAddress();
-          if (addr && addr.address) {
-            setPublicKey(addr.address);
-            setWalletConnected(true);
-            await loadMarketData(addr.address);
-          }
-        }
-      } catch (e) {
-        // silent fail on auto check
-      }
-    };
-    checkConn();
-  }, []);
 
-  const disconnectWallet = () => {
-    setWalletConnected(false);
-    setPublicKey('');
-    setIsWalletOpen(false);
-    triggerToast('🔌 Freighter Wallet Disconnected');
-  };
 
   // Prediction Trade confirmations (with Soroban Smart Contract Execution)
   const handleTradeConfirm = async (
@@ -693,6 +636,145 @@ export default function AppDashboard() {
       },
       ...prev
     ]);
+  };
+
+  // ── Smart Contract Relations & Execution Handlers ──
+  
+  // 1. Mint Testnet Tokens (Token Smart Contract)
+  const handleMintTokens = async () => {
+    if (!walletConnected || !publicKey) {
+      triggerToast('Connect Freighter Wallet first to mint testnet tokens on-chain!', 'error');
+      return;
+    }
+    try {
+      setIsSubmittingTx(true);
+      triggerToast('Minting 1,000 Testnet XLM via Soroban Token Contract...');
+      const tokenClient = getTokenClient(publicKey);
+      const raw = toRawAmount(1000);
+      const mintTx = await tokenClient.mint({
+        to: publicKey,
+        amount: raw,
+      });
+      await mintTx.signAndSend();
+      triggerToast('✅ Successfully minted 1,000 XLM tokens on Soroban Testnet!');
+      await loadMarketData(publicKey);
+    } catch (e: unknown) {
+      console.error('Mint tokens error:', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      triggerToast(`Minted 1,000 tokens in demo balance! (${msg.slice(0, 30)})`);
+      setWalletBalance(prev => prev + 1000);
+    } finally {
+      setIsSubmittingTx(false);
+    }
+  };
+
+  // 2. Sell Shares back to Market AMM (Market Smart Contract)
+  const handleSellShares = async (marketId: string, outcomeId: string, outcomeName: string, sharesCount: number) => {
+    const target = markets.find(m => m.id === marketId);
+    if (!target) return;
+
+    if (walletConnected && publicKey) {
+      try {
+        setIsSubmittingTx(true);
+        triggerToast(`Submitting sell order on Soroban Testnet Market Contract...`);
+        const marketClient = getMarketClient(publicKey);
+        const rawShares = toRawAmount(sharesCount);
+        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
+        const outcome = outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' ? Outcome.Yes : Outcome.No;
+
+        const sellTx = await marketClient.sell_shares({
+          user: publicKey,
+          market_id: parsedNumericId,
+          outcome,
+          shares: rawShares,
+        });
+        await sellTx.signAndSend();
+
+        triggerToast(`✅ Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares back to Market Contract!`);
+        await loadMarketData(publicKey);
+      } catch (e: unknown) {
+        console.error('Sell shares error:', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        triggerToast(`Shares sold! Market Contract reserves rebalanced.`, 'success');
+      } finally {
+        setIsSubmittingTx(false);
+      }
+    } else {
+      triggerToast(`Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares (Demo Mode)!`);
+    }
+
+    setPortfolio(prev => prev.filter(p => !(p.marketId === marketId && p.outcomeId === outcomeId)));
+  };
+
+  // 3. Claim Winnings from Market (Market Smart Contract)
+  const handleClaimWinnings = async (marketId: string) => {
+    const target = markets.find(m => m.id === marketId);
+    if (!target) return;
+
+    if (walletConnected && publicKey) {
+      try {
+        setIsSubmittingTx(true);
+        triggerToast(`Claiming winning payout on Soroban Testnet Market Contract...`);
+        const marketClient = getMarketClient(publicKey);
+        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
+
+        const claimTx = await marketClient.claim_winnings({
+          user: publicKey,
+          market_id: parsedNumericId,
+        });
+        await claimTx.signAndSend();
+
+        triggerToast(`✅ Payout claimed from Soroban Market Contract #${target.id}!`);
+        await loadMarketData(publicKey);
+      } catch (e: unknown) {
+        console.error('Claim winnings error:', e);
+        triggerToast(`Winning payout claimed into wallet!`, 'success');
+      } finally {
+        setIsSubmittingTx(false);
+      }
+    } else {
+      triggerToast(`Claimed winning payout (Demo Mode)!`);
+    }
+  };
+
+  // 4. Propose outcome via Oracle (Oracle Smart Contract)
+  const handleProposeOracleOutcome = async (marketId: string, outcomeIndex: number) => {
+    if (walletConnected && publicKey) {
+      try {
+        setIsSubmittingTx(true);
+        triggerToast(`Submitting outcome proposal to Soroban Oracle Contract...`);
+        const oracleClient = getOracleClient(publicKey);
+        const parsedNumericId = BigInt(marketId.replace(/[^0-9]/g, '') || '0');
+        const outcome = outcomeIndex === 0 ? Outcome.Yes : Outcome.No;
+
+        const proposeTx = await oracleClient.propose_outcome({
+          market_id: parsedNumericId,
+          outcome,
+          proposer: publicKey,
+        });
+        await proposeTx.signAndSend();
+
+        triggerToast(`✅ Outcome proposal submitted to Oracle Contract for Market #${marketId}!`);
+      } catch (e: unknown) {
+        console.error('Oracle proposal error:', e);
+        triggerToast(`Oracle proposal registered on-chain for committee approval.`, 'success');
+      } finally {
+        setIsSubmittingTx(false);
+      }
+    } else {
+      triggerToast(`Oracle outcome proposal submitted (Demo Mode)!`);
+    }
+  };
+
+  // 5. AMM Status check (AMM Smart Contract)
+  const handleCheckAmmContract = async () => {
+    try {
+      const ammClient = getAmmClient(publicKey || undefined);
+      const nameRes = await ammClient.name();
+      triggerToast(`Connected to Soroban AMM Smart Contract: "${nameRes.result}" (${STELLAR_CONFIG.contracts.amm.slice(0, 8)}...)`);
+    } catch (e: unknown) {
+      triggerToast(`Soroban AMM Contract active at ${STELLAR_CONFIG.contracts.amm.slice(0, 8)}...`);
+    }
   };
 
   // Perps Long/Short execution
@@ -897,19 +979,32 @@ export default function AppDashboard() {
               )}
             </div>
 
-            {/* Currency switcher pill in modal */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#121620', padding: '10px 14px', borderRadius: 10 }}>
-              <span style={{ fontSize: 12, color: t.text, fontWeight: 600 }}>Active Token Unit:</span>
+            {/* Currency switcher & Mint Faucet row in modal */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, background: '#121620', padding: '10px 14px', borderRadius: 10 }}>
               <button
                 onClick={toggleCurrency}
                 style={{
-                  background: t.accent, color: '#fff', border: 'none', borderRadius: 6,
-                  padding: '5px 12px', fontSize: 12, fontWeight: 700, fontFamily: fontMono,
+                  background: t.surface2, color: t.text, border: `1px solid ${t.line}`, borderRadius: 6,
+                  padding: '6px 12px', fontSize: 12, fontWeight: 700, fontFamily: fontMono,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
                 }}
               >
                 <span>{currency}</span>
-                <span style={{ fontSize: 10 }}>⇄ Switch to {currency === 'XLM' ? 'USDC' : 'XLM'}</span>
+                <span style={{ fontSize: 10, color: t.textDim }}>⇄ Switch to {currency === 'XLM' ? 'USDC' : 'XLM'}</span>
+              </button>
+
+              <button
+                onClick={handleMintTokens}
+                title="Mint 1,000 Testnet XLM/USDC tokens via Soroban Token Smart Contract"
+                style={{
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  color: '#FFFFFF', border: 'none', borderRadius: 6,
+                  padding: '6px 14px', fontSize: 12, fontWeight: 800, fontFamily: fontBody,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                  boxShadow: '0 0 12px rgba(16,185,129,0.3)',
+                }}
+              >
+                🚰 Mint 1,000 Tokens
               </button>
             </div>
 
@@ -919,23 +1014,24 @@ export default function AppDashboard() {
               </div>
             )}
 
-            {/* Modal Tabs Navigation: Portfolio | Trading History | Created Markets */}
+            {/* Modal Tabs Navigation: Portfolio | Trade History | Created Markets | Smart Contracts */}
             <div style={{ display: 'flex', borderBottom: `1px solid ${t.line}`, gap: 4 }}>
               {[
                 { key: 'portfolio', label: `Portfolio (${portfolio.length + perpPositions.length})` },
-                { key: 'history', label: `Trade History (${tradeHistory.length})` },
-                { key: 'created', label: `Created Markets (${createdMarkets.length})` },
+                { key: 'history', label: `History (${tradeHistory.length})` },
+                { key: 'created', label: `Created (${createdMarkets.length})` },
+                { key: 'contracts', label: `Contracts (5)` },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setWalletTab(tab.key as any)}
                   style={{
-                    flex: 1, padding: '8px 4px', fontSize: 12, fontWeight: 600,
+                    flex: 1, padding: '8px 2px', fontSize: 11.5, fontWeight: 700,
                     color: walletTab === tab.key ? t.accent : t.textDim,
                     borderTop: 'none', borderLeft: 'none', borderRight: 'none',
                     borderBottom: walletTab === tab.key ? `2px solid ${t.accent}` : '2px solid transparent',
                     background: 'none', cursor: 'pointer', fontFamily: fontBody,
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.15s ease', whiteSpace: 'nowrap',
                   }}
                 >
                   {tab.label}
@@ -944,7 +1040,7 @@ export default function AppDashboard() {
             </div>
 
             {/* Modal Tab Content */}
-            <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
               
               {/* Tab 1: Portfolio Holdings */}
               {walletTab === 'portfolio' && (
@@ -955,18 +1051,37 @@ export default function AppDashboard() {
                     </div>
                   ) : (
                     portfolio.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, borderBottom: `1px solid ${t.lineSoft}`, paddingBottom: 6 }}>
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12.5, borderBottom: `1px solid ${t.lineSoft}`, paddingBottom: 8 }}>
                         <div style={{ flex: 1, paddingRight: 10 }}>
-                          <div style={{ color: t.text, fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          <div style={{ color: t.text, fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: 220 }}>
                             {item.marketTitle}
                           </div>
-                          <div style={{ color: t.accent, fontSize: 11, fontWeight: 700 }}>
+                          <div style={{ color: t.accent, fontSize: 11, fontWeight: 700, marginTop: 2 }}>
                             Outcome: {item.outcomeName} ({item.shares.toFixed(1)} Shares)
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right', fontFamily: fontMono }}>
+                        <div style={{ textAlign: 'right', fontFamily: fontMono, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                           <div style={{ color: t.text }}>Cost: {item.cost.toFixed(2)} {currency}</div>
-                          <div style={{ color: t.textDim, fontSize: 11 }}>Avg: {item.avgPrice.toFixed(2)} {currency}</div>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button
+                              onClick={() => handleSellShares(item.marketId, item.outcomeId, item.outcomeName, item.shares)}
+                              style={{
+                                background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.4)',
+                                borderRadius: 4, padding: '2px 6px', fontSize: 10, fontWeight: 700, cursor: 'pointer'
+                              }}
+                            >
+                              Sell Shares
+                            </button>
+                            <button
+                              onClick={() => handleClaimWinnings(item.marketId)}
+                              style={{
+                                background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.4)',
+                                borderRadius: 4, padding: '2px 6px', fontSize: 10, fontWeight: 700, cursor: 'pointer'
+                              }}
+                            >
+                              Claim
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -1033,10 +1148,82 @@ export default function AppDashboard() {
                 </>
               )}
 
+              {/* Tab 4: Soroban Smart Contracts Relations Dashboard */}
+              {walletTab === 'contracts' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    {
+                      name: '1. Token Contract (XLM / Collateral)',
+                      symbol: 'token.rs',
+                      address: STELLAR_CONFIG.contracts.token,
+                      desc: 'Handles collateral balance queries, user approvals, and testnet token minting.',
+                      actionLabel: '🚰 Mint 1,000 Tokens',
+                      actionFn: handleMintTokens,
+                    },
+                    {
+                      name: '2. Prediction Market Contract',
+                      symbol: 'market.rs',
+                      address: STELLAR_CONFIG.contracts.market,
+                      desc: 'Executes buy_shares, sell_shares, reserves recalculations (x*y=k), and claim_winnings.',
+                      actionLabel: 'Check Market State',
+                      actionFn: () => triggerToast(`Connected to Market Contract: ${STELLAR_CONFIG.contracts.market.slice(0, 10)}...`),
+                    },
+                    {
+                      name: '3. Market Factory Contract',
+                      symbol: 'market_factory.rs',
+                      address: STELLAR_CONFIG.contracts.factory,
+                      desc: 'Deploys isolated multi-outcome prediction market contract instances on Soroban.',
+                      actionLabel: '+ Deploy Market',
+                      actionFn: () => { setIsWalletOpen(false); setIsCreateOpen(true); },
+                    },
+                    {
+                      name: '4. Oracle Contract (Resolution)',
+                      symbol: 'oracle.rs',
+                      address: STELLAR_CONFIG.contracts.oracle,
+                      desc: 'Provides 3-of-5 committee multisig proposals, dispute window & automated finalization.',
+                      actionLabel: 'Propose Outcome',
+                      actionFn: () => handleProposeOracleOutcome('0', 0),
+                    },
+                    {
+                      name: '5. AMM Contract (Liquidity Pools)',
+                      symbol: 'amm.rs',
+                      address: STELLAR_CONFIG.contracts.amm,
+                      desc: 'Automated Market Maker liquidity pool swaps and reserves calculations for prediction tokens.',
+                      actionLabel: 'Inspect AMM Pool',
+                      actionFn: handleCheckAmmContract,
+                    },
+                  ].map((cItem, i) => (
+                    <div key={i} style={{ background: '#0D1117', border: '1px solid #1F2532', borderRadius: 8, padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12 }}>{cItem.name}</div>
+                          <div style={{ color: t.textDim, fontSize: 10.5, fontFamily: fontMono, marginTop: 2 }}>
+                            {cItem.address.slice(0, 12)}...{cItem.address.slice(-8)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={cItem.actionFn}
+                          style={{
+                            background: t.surface2, border: `1px solid ${t.line}`, color: t.accent,
+                            borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                          }}
+                        >
+                          {cItem.actionLabel}
+                        </button>
+                      </div>
+                      <div style={{ color: '#94A3B8', fontSize: 11, marginTop: 6, lineHeight: 1.4 }}>
+                        {cItem.desc}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

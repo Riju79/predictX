@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
+import Lenis from 'lenis';
+import { useWallet } from '@/src/wallet';
 import { Outcome, MarketState, MarketStatus } from '@/src/bindings/market';
 import BackgroundScene from '@/components/ui/aurora-section-hero';
 import { 
@@ -22,9 +23,11 @@ const toRawAmount = (val: string) => configToRawAmount(val);
 const fromRawAmount = (val: bigint | number) => configFromRawAmount(val).toFixed(4);
 
 export default function Home() {
-  // ── Wallet state ──────────────────────────────────────────────────────────
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [publicKey, setPublicKey] = useState('');
+  // ── Wallet context ────────────────────────────────────────────────────────
+  const wallet = useWallet();
+  const walletConnected = wallet.isConnected;
+  const publicKey = wallet.publicKey;
+  const connectWallet = wallet.connect;
   const [walletError, setWalletError] = useState('');
 
   // ── Market state ──────────────────────────────────────────────────────────
@@ -217,6 +220,47 @@ export default function Home() {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  // ── Smooth Scroll (Lenis) ──────────────────────────────────────────────────
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      touchMultiplier: 1.5,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    const rafId = requestAnimationFrame(raf);
+
+    // Smooth scroll for internal anchor navigation links
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a[href^="#"]');
+      if (anchor) {
+        const href = anchor.getAttribute('href');
+        if (href && href.startsWith('#') && href.length > 1) {
+          const targetEl = document.querySelector(href);
+          if (targetEl) {
+            e.preventDefault();
+            lenis.scrollTo(targetEl as HTMLElement, { offset: -60, duration: 1.2 });
+          }
+        }
+      }
+    };
+
+    document.addEventListener('click', handleAnchorClick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      document.removeEventListener('click', handleAnchorClick);
+      lenis.destroy();
+    };
+  }, []);
+
   // ── Reveal on scroll ──────────────────────────────────────────────────────
   useEffect(() => {
     const els = document.querySelectorAll('.reveal');
@@ -224,7 +268,7 @@ export default function Home() {
       entries.forEach(en => {
         if (en.isIntersecting) en.target.classList.add('in');
       });
-    }, { threshold: 0.2 });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     els.forEach(el => io.observe(el));
     return () => io.disconnect();
   }, []);
@@ -413,21 +457,7 @@ export default function Home() {
     }
   };
 
-  // ── Wallet ────────────────────────────────────────────────────────────────
-  const connectWallet = async () => {
-    try {
-      setWalletError('');
-      const connected = await isConnected();
-      if (!connected) { setWalletError('Freighter wallet not found. Please install it.'); return; }
-      await requestAccess();
-      const addr = await getAddress();
-      setPublicKey(addr.address);
-      setWalletConnected(true);
-      await loadMarketData(addr.address);
-    } catch (e: unknown) {
-      setWalletError(e instanceof Error ? e.message : 'Failed to connect wallet');
-    }
-  };
+
 
   const loadMarketData = async (pk: string) => {
     try {
@@ -646,7 +676,7 @@ export default function Home() {
             {/* Navigation Options in Serif & Clean Aesthetics */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '16px' }}>
               <a 
-                href="#perks" 
+                href="#product" 
                 onClick={() => setSideNavOpen(false)}
                 style={{ 
                   color: '#ffffff', 

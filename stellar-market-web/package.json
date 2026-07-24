@@ -14,6 +14,7 @@
     "@tailwindcss/postcss": "^4.3.2",
     "buffer": "^6.0.3",
     "framer-motion": "^12.42.2",
+    "lenis": "^1.3.25",
     "lightweight-charts": "^5.2.0",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
