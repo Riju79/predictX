@@ -343,7 +343,7 @@ export default function AppDashboard() {
   }, []);
   const [markets, setMarkets] = useState<Market[]>(INITIAL_MARKETS);
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
-  const [walletBalance, setWalletBalance] = useState(2480.12);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   // Currency & Wallet History State
   const [currency, setCurrency] = useState<'XLM' | 'USDC'>('XLM');
@@ -423,7 +423,7 @@ export default function AppDashboard() {
   const wallet = useWallet();
   const walletConnected = wallet.isConnected;
   const publicKey = wallet.publicKey;
-  const activeBalance = wallet.balance || walletBalance;
+  const activeBalance = walletConnected ? wallet.balance : walletBalance;
   const connectWallet = wallet.connect;
   const disconnectWallet = wallet.disconnect;
   const [walletError, setWalletError] = useState('');
@@ -981,10 +981,10 @@ export default function AppDashboard() {
                 {walletConnected ? `Stellar Testnet (${currency} Balance)` : 'Wallet Status'}
               </div>
               <div style={{ fontSize: 28, fontWeight: 700, color: t.text, fontFamily: fontMono }}>
-                {walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+                {activeBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
               </div>
               <div style={{ fontSize: 12, color: t.textDim, fontFamily: fontMono, marginTop: 4 }}>
-                Equivalent: ~${(walletBalance * (currency === 'XLM' ? xlmPrice : 1)).toFixed(2)} USD
+                Equivalent: ~${(activeBalance * (currency === 'XLM' ? xlmPrice : 1)).toFixed(2)} USD
               </div>
               {walletConnected ? (
                 <>
