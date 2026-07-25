@@ -50,10 +50,36 @@ export const getExpirationLedger = async (): Promise<number> => {
 
 const safeSignTransaction = (publicKey?: string) => {
   if (!publicKey) return undefined;
-  return async (xdr: string) => {
-    const res = await signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase });
-    if (typeof res === 'string') return res;
-    return (res as any)?.signedTxXdr || (res as any)?.signedXdr || (res as any)?.xdr || xdr;
+  return async (xdr: string): Promise<{ signedTxXdr: string }> => {
+    const res = await signTransaction(xdr, {
+      networkPassphrase: STELLAR_CONFIG.networkPassphrase,
+      address: publicKey,
+    });
+    if (!res) {
+      throw new Error("User declined transaction or wallet returned empty signature");
+    }
+    
+    let xdrString: string | undefined = undefined;
+
+    if (typeof res === 'string') {
+      xdrString = res;
+    } else {
+      xdrString = (res as any)?.signedTxXdr || (res as any)?.signedXdr || (res as any)?.transactionXdr || (res as any)?.xdr;
+      if (!xdrString && typeof res === 'object' && res !== null) {
+        for (const val of Object.values(res)) {
+          if (typeof val === 'string' && val.length > 50 && val.startsWith('AAAA')) {
+            xdrString = val;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!xdrString) {
+      throw new Error("Could not extract signed XDR string from Freighter wallet response");
+    }
+
+    return { signedTxXdr: xdrString };
   };
 };
 

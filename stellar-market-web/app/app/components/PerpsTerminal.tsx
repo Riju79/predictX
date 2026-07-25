@@ -155,10 +155,10 @@ export default function PerpsTerminal({
     setCustomLeverage(Math.min(parsedLeverage, 5));
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!walletConnected && onConnectWallet) {
-      onConnectWallet();
+      await onConnectWallet();
       return;
     }
     if (!tradingAsset) return;
@@ -171,7 +171,7 @@ export default function PerpsTerminal({
       return;
     }
 
-    onOpenPosition({
+    await onOpenPosition({
       symbol: `${tradingAsset.symbol}-PERP`,
       type: tradeChoice,
       size,

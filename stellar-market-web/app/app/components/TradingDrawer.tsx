@@ -45,6 +45,13 @@ interface TradingDrawerProps {
     amount: number,
     shares: number
   ) => void;
+  onSellConfirm?: (
+    marketId: string,
+    outcomeId: string,
+    outcomeName: string,
+    sharesToSell: number
+  ) => Promise<void>;
+  userSharesOwned?: number;
 }
 
 export default function TradingDrawer({
@@ -55,9 +62,14 @@ export default function TradingDrawer({
   onConnectWallet,
   currency = 'XLM',
   onTradeConfirm,
+  onSellConfirm,
+  userSharesOwned = 0,
 }: TradingDrawerProps) {
+  const [tradeMode, setTradeMode] = useState<'BUY' | 'SELL'>('BUY');
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>('');
   const [amountVal, setAmountVal] = useState('100');
+  const [sellSharesVal, setSellSharesVal] = useState<string>('');
+  const [selectedSellPct, setSelectedSellPct] = useState<number>(100);
   const [txState, setTxState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [timeframe, setTimeframe] = useState<Timeframe>('1H');
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +92,16 @@ export default function TradingDrawer({
   const estReturnPct = currentPrice > 0 ? Math.round(((1 / currentPrice) - 1) * 100) : 0;
   const transactionFee = 0.00001;
 
+  // Sell Calculations
+  const sharesToSell = sellSharesVal !== '' ? (parseFloat(sellSharesVal) || 0) : ((userSharesOwned * selectedSellPct) / 100);
+  const grossSellPayout = sharesToSell * currentPrice;
+  const sellFeeRate = 0.01;
+  const totalSellFee = grossSellPayout * sellFeeRate;
+  const lpSellFee = totalSellFee * 0.50;
+  const creatorSellFee = totalSellFee * 0.30;
+  const protocolSellFee = totalSellFee * 0.20;
+  const netSellPayout = Math.max(0, grossSellPayout - totalSellFee);
+
   const handleConfirm = async () => {
     if (!walletConnected && onConnectWallet) {
       await onConnectWallet();
@@ -88,7 +110,13 @@ export default function TradingDrawer({
     if (!market || !selectedOutcome) return;
     try {
       setTxState('loading');
-      await onTradeConfirm(market.id, selectedOutcome.id, selectedOutcome.name, investment, sharesReceived);
+      if (tradeMode === 'BUY') {
+        await onTradeConfirm(market.id, selectedOutcome.id, selectedOutcome.name, investment, sharesReceived);
+      } else {
+        if (onSellConfirm) {
+          await onSellConfirm(market.id, selectedOutcome.id, selectedOutcome.name, sharesToSell);
+        }
+      }
       setTxState('success');
       setTimeout(() => {
         setTxState('idle');
@@ -198,6 +226,36 @@ export default function TradingDrawer({
           </div>
         </div>
 
+        {/* Trade Mode Selector (BUY / SELL) */}
+        <div style={{ display: 'flex', gap: 6, background: t.surface2, padding: 4, borderRadius: 12, border: `1px solid ${t.line}` }}>
+          <button
+            type="button"
+            onClick={() => setTradeMode('BUY')}
+            style={{
+              flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 700,
+              background: tradeMode === 'BUY' ? 'rgba(16, 185, 129, 0.2)' : 'none',
+              border: tradeMode === 'BUY' ? `1px solid ${t.up}` : '1px solid transparent',
+              color: tradeMode === 'BUY' ? t.up : t.textDim,
+              cursor: 'pointer', fontFamily: fontBody, transition: 'all 0.15s ease',
+            }}
+          >
+            🟢 BUY SHARES
+          </button>
+          <button
+            type="button"
+            onClick={() => setTradeMode('SELL')}
+            style={{
+              flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 700,
+              background: tradeMode === 'SELL' ? 'rgba(239, 68, 68, 0.2)' : 'none',
+              border: tradeMode === 'SELL' ? `1px solid ${t.down}` : '1px solid transparent',
+              color: tradeMode === 'SELL' ? t.down : t.textDim,
+              cursor: 'pointer', fontFamily: fontBody, transition: 'all 0.15s ease',
+            }}
+          >
+            🔴 SELL SHARES
+          </button>
+        </div>
+
         {/* Trade Area */}
         <div style={{
           background: t.surface2, border: `1px solid ${t.line}`,
@@ -245,67 +303,151 @@ export default function TradingDrawer({
             })}
           </div>
 
-          <div>
-            <label style={{ fontSize: 12, color: t.textDim, display: 'block', marginBottom: 6, fontWeight: 500 }}>
-              Amount ({currency})
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="number"
-                value={amountVal}
-                onChange={e => setAmountVal(e.target.value)}
-                style={{
-                  width: '100%', padding: '12px 14px', borderRadius: 8,
-                  background: t.surface, border: `1px solid ${t.line}`,
-                  color: t.text, fontSize: 15, fontWeight: 600, outline: 'none',
-                  fontFamily: fontMono,
-                }}
-              />
-              <span style={{
-                position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                color: t.textFaint, fontSize: 12, fontWeight: 700,
-              }}>{currency}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 11.5, color: t.textDim }}>
-              <span>Balance: {walletBalance.toFixed(2)} {currency}</span>
-              <span 
-                onClick={() => setAmountVal(walletBalance.toFixed(0))}
-                style={{ color: t.accent, cursor: 'pointer', fontWeight: 600 }}
-              >
-                Use Max
-              </span>
-            </div>
-          </div>
+          {tradeMode === 'BUY' ? (
+            <>
+              <div>
+                <label style={{ fontSize: 12, color: t.textDim, display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                  Amount ({currency})
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="number"
+                    value={amountVal}
+                    onChange={e => setAmountVal(e.target.value)}
+                    style={{
+                      width: '100%', padding: '12px 14px', borderRadius: 8,
+                      background: t.surface, border: `1px solid ${t.line}`,
+                      color: t.text, fontSize: 15, fontWeight: 600, outline: 'none',
+                      fontFamily: fontMono,
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                    color: t.textFaint, fontSize: 12, fontWeight: 700,
+                  }}>{currency}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 11.5, color: t.textDim }}>
+                  <span>Balance: {walletBalance.toFixed(2)} {currency}</span>
+                  <span 
+                    onClick={() => setAmountVal(walletBalance.toFixed(0))}
+                    style={{ color: t.accent, cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Use Max
+                  </span>
+                </div>
+              </div>
 
-          {/* Pricing Info */}
-          <div style={{
-            display: 'flex', flexDirection: 'column', gap: 8,
-            fontSize: 13, borderTop: `1px solid ${t.line}`, paddingTop: 14,
-            fontFamily: fontBody,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: t.textDim }}>Target Outcome</span>
-              <span style={{ color: selectedOutcome.color, fontWeight: 700 }}>{selectedOutcome.name}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: t.textDim }}>Avg. Share Price</span>
-              <span style={{ color: t.text, fontFamily: fontMono }}>${pricePerShare.toFixed(2)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: t.textDim }}>Est. Shares Received</span>
-              <span style={{ color: t.text, fontFamily: fontMono, fontWeight: 600 }}>{sharesReceived.toFixed(2)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: t.textDim }}>Potential Payout</span>
-              <span style={{ color: t.up, fontFamily: fontMono, fontWeight: 700 }}>
-                ${potentialPayout.toFixed(2)} (+{estReturnPct}%)
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: t.textDim }}>Network Fee (Stellar)</span>
-              <span style={{ color: t.textFaint, fontFamily: fontMono }}>{transactionFee} XLM</span>
-            </div>
-          </div>
+              {/* Pricing Info */}
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 8,
+                fontSize: 13, borderTop: `1px solid ${t.line}`, paddingTop: 14,
+                fontFamily: fontBody,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Target Outcome</span>
+                  <span style={{ color: selectedOutcome.color, fontWeight: 700 }}>{selectedOutcome.name}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Avg. Share Price</span>
+                  <span style={{ color: t.text, fontFamily: fontMono }}>${pricePerShare.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Est. Shares Received</span>
+                  <span style={{ color: t.text, fontFamily: fontMono, fontWeight: 600 }}>{sharesReceived.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Potential Payout</span>
+                  <span style={{ color: t.up, fontFamily: fontMono, fontWeight: 700 }}>
+                    ${potentialPayout.toFixed(2)} (+{estReturnPct}%)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Network Fee (Stellar)</span>
+                  <span style={{ color: t.textFaint, fontFamily: fontMono }}>{transactionFee} XLM</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* SELL MODE CONTROLS */}
+              <div>
+                <label style={{ fontSize: 12, color: t.textDim, display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                  Select Percentage / Shares to Sell:
+                </label>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  {[25, 50, 75, 100].map(pct => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => { setSelectedSellPct(pct); setSellSharesVal(''); }}
+                      style={{
+                        flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 11.5, fontWeight: 700,
+                        background: (selectedSellPct === pct && sellSharesVal === '') ? 'rgba(239, 68, 68, 0.2)' : t.surface,
+                        border: `1px solid ${(selectedSellPct === pct && sellSharesVal === '') ? t.down : t.line}`,
+                        color: (selectedSellPct === pct && sellSharesVal === '') ? t.down : t.text,
+                        cursor: 'pointer', fontFamily: fontBody,
+                      }}
+                    >
+                      {pct === 100 ? 'MAX' : `${pct}%`}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="number"
+                    value={sellSharesVal}
+                    onChange={e => setSellSharesVal(e.target.value)}
+                    placeholder={`Or enter custom shares (Max: ${userSharesOwned.toFixed(1)})`}
+                    style={{
+                      width: '100%', padding: '10px 14px', borderRadius: 8,
+                      background: t.surface, border: `1px solid ${t.line}`,
+                      color: t.text, fontSize: 13, fontWeight: 600, outline: 'none',
+                      fontFamily: fontMono,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Sell AMM Quote & Fee Breakdown */}
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 6,
+                fontSize: 12.5, borderTop: `1px solid ${t.line}`, paddingTop: 12,
+                fontFamily: fontBody, background: 'rgba(239, 68, 68, 0.05)', padding: 12, borderRadius: 10,
+                border: '1px solid rgba(239, 68, 68, 0.2)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Shares to Sell:</span>
+                  <span style={{ color: t.text, fontFamily: fontMono, fontWeight: 700 }}>{sharesToSell.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Gross Value:</span>
+                  <span style={{ color: t.text, fontFamily: fontMono }}>{grossSellPayout.toFixed(3)} {currency}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: t.textDim }}>Total Trading Fee (1%):</span>
+                  <span style={{ color: t.down, fontFamily: fontMono }}>-{totalSellFee.toFixed(4)} {currency}</span>
+                </div>
+                <div style={{ paddingLeft: 6, borderLeft: `2px solid ${t.lineSoft}`, display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11, color: t.textDim }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>• LP Pool Rewards (50%):</span>
+                    <span>{lpSellFee.toFixed(4)} {currency}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>• Creator Fee (30%):</span>
+                    <span>{creatorSellFee.toFixed(4)} {currency}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>• Protocol Treasury (20%):</span>
+                    <span>{protocolSellFee.toFixed(4)} {currency}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: `1px solid ${t.lineSoft}`, paddingTop: 6, marginTop: 4, fontWeight: 700 }}>
+                  <span style={{ color: t.text }}>Net XLM Received:</span>
+                  <span style={{ color: t.up, fontFamily: fontMono }}>+{netSellPayout.toFixed(3)} {currency}</span>
+                </div>
+              </div>
+            </>
+          )}
 
           <div style={{ flex: 1 }} />
 
@@ -313,18 +455,18 @@ export default function TradingDrawer({
           {txState === 'idle' && (
             <button
               onClick={handleConfirm}
-              disabled={investment <= 0 || investment > walletBalance}
+              disabled={tradeMode === 'BUY' ? (investment <= 0 || investment > walletBalance) : (sharesToSell <= 0)}
               style={{
                 width: '100%', padding: 14, borderRadius: 10, border: 'none',
-                background: selectedOutcome.color,
-                color: '#0A0C10', fontWeight: 700, fontSize: 14,
-                cursor: (investment <= 0 || investment > walletBalance) ? 'not-allowed' : 'pointer',
-                opacity: (investment <= 0 || investment > walletBalance) ? 0.5 : 1,
-                boxShadow: `0 0 14px ${selectedOutcome.color}55`,
+                background: tradeMode === 'BUY' ? selectedOutcome.color : 'linear-gradient(135deg, #EF4444, #DC2626)',
+                color: tradeMode === 'BUY' ? '#0A0C10' : '#FFF', fontWeight: 700, fontSize: 14,
+                cursor: (tradeMode === 'BUY' ? (investment <= 0 || investment > walletBalance) : sharesToSell <= 0) ? 'not-allowed' : 'pointer',
+                opacity: (tradeMode === 'BUY' ? (investment <= 0 || investment > walletBalance) : sharesToSell <= 0) ? 0.5 : 1,
+                boxShadow: tradeMode === 'BUY' ? `0 0 14px ${selectedOutcome.color}55` : '0 0 14px rgba(239,68,68,0.5)',
                 transition: 'all 0.15s',
               }}
             >
-              Buy {selectedOutcome.name} Shares
+              {tradeMode === 'BUY' ? `Buy ${selectedOutcome.name} Shares` : `Sell ${sharesToSell.toFixed(1)} ${selectedOutcome.name} Shares`}
             </button>
           )}
 

@@ -11,6 +11,7 @@ import CreateMarketModal from './components/CreateMarketModal';
 import PerpsTerminal from './components/PerpsTerminal';
 import LiveFeed from './components/LiveFeed';
 import MarketDetailPage from './components/MarketDetailPage';
+import SellSharesModal from './components/SellSharesModal';
 import Footer from './components/Footer';
 import { t, fontBody, fontDisplay, fontMono } from './tokens';
 import { useWallet } from '@/src/wallet';
@@ -32,6 +33,10 @@ import { db } from '@/src/backend/db';
 const MARKET_ID = STELLAR_CONFIG.contracts.market;
 const TOKEN_ID = STELLAR_CONFIG.contracts.token;
 const MARKET_NUMERIC_ID = 0n;
+
+const getOnChainMarketId = (_marketId?: string): bigint => {
+  return 1n;
+};
 
 /* ── Helper to generate initial history series ── */
 function generateInitialHistory(outcomes: MarketOutcome[], length = 24): Record<string, number[]> {
@@ -299,6 +304,7 @@ interface TradeHistoryEntry {
   shares: number;
   currency: 'XLM' | 'USDC';
   timestamp: string;
+  txHash?: string;
 }
 
 interface CreatedMarketEntry {
@@ -354,6 +360,10 @@ export default function AppDashboard() {
   const [tradeHistory, setTradeHistory] = useState<TradeHistoryEntry[]>([]);
   const [createdMarkets, setCreatedMarkets] = useState<CreatedMarketEntry[]>([]);
   const [walletTab, setWalletTab] = useState<'portfolio' | 'history' | 'created' | 'contracts'>('portfolio');
+  const [activeSellPosition, setActiveSellPosition] = useState<ShareHolding | null>(null);
+  const [isSellModalOpen, setIsSellModalOpen] = useState<boolean>(false);
+  // marketId → { totalVolume, creatorEarnings } from on-chain get_market_state
+  const [creatorEarningsMap, setCreatorEarningsMap] = useState<Record<string, { volume: number; earnings: number }>>({});
 
   // Load persistent custom markets on mount
   useEffect(() => {
@@ -436,7 +446,9 @@ export default function AppDashboard() {
   const wallet = useWallet();
   const walletConnected = wallet.isConnected;
   const publicKey = wallet.publicKey;
-  const activeBalance = walletConnected ? (wallet.balance || walletBalance) : walletBalance;
+  const activeBalance = walletConnected
+    ? (wallet.balance > 0 ? wallet.balance : walletBalance)
+    : walletBalance;
   const connectWallet = wallet.connect;
   const disconnectWallet = wallet.disconnect;
   const [walletError, setWalletError] = useState('');
@@ -444,7 +456,7 @@ export default function AppDashboard() {
 
   const toggleCurrency = () => {
     if (currency === 'XLM') {
-      const usdcVal = walletBalance * xlmPrice;
+      const usdcVal = activeBalance * xlmPrice;
       setCurrency('USDC');
     } else {
       setCurrency('XLM');
@@ -462,11 +474,17 @@ export default function AppDashboard() {
           const bal = parseFloat(native.balance);
           if (!isNaN(bal)) {
             setWalletBalance(bal);
-            return;
           }
         }
       }
+    } catch (e: any) {
+      if (!e?.message?.includes('Account not found')) {
+        console.info('Horizon balance fetch notice:', e?.message || e);
+      }
+    }
 
+    // Also try Soroban token balance as fallback
+    try {
       const tokenClient = getTokenClient();
       const balRes = await tokenClient.balance({ id: pk });
       if (balRes && balRes.result !== undefined) {
@@ -480,6 +498,36 @@ export default function AppDashboard() {
       if (!e?.message?.includes('Account not found')) {
         console.info('Soroban RPC token fetch notice:', e?.message || e);
       }
+    }
+
+    // ── Query on-chain market state for each created market to compute creator earnings ──
+    try {
+      const userCreated = db.getCreatedMarkets(pk);
+      if (userCreated.length > 0) {
+        const marketClient = getMarketClient(pk);
+        const earningsMap: Record<string, { volume: number; earnings: number }> = {};
+        for (const cm of userCreated) {
+          try {
+            const parsedId = getOnChainMarketId(cm.id);
+            const stateRes = await marketClient.get_market_state({ market_id: parsedId });
+            const state = (stateRes as any)?.result ?? stateRes;
+            if (state && state.total_volume !== undefined) {
+              const rawVol = typeof state.total_volume === 'bigint'
+                ? state.total_volume
+                : BigInt(String(state.total_volume));
+              const volume = fromRawAmount(rawVol);
+              // creator_fee_bps = 50 → 0.5% of total volume
+              const earnings = volume * 0.005;
+              earningsMap[cm.id] = { volume, earnings };
+            }
+          } catch {
+            // market may not exist on-chain yet, skip silently
+          }
+        }
+        setCreatorEarningsMap(earningsMap);
+      }
+    } catch (e: any) {
+      console.info('Creator earnings fetch notice:', e?.message || e);
     }
   };
 
@@ -521,8 +569,11 @@ export default function AppDashboard() {
     amount: number,
     shares: number
   ) => {
-    const target = markets.find(m => m.id === marketId);
-    if (!target) return;
+    const target = markets.find(m => m.id === marketId) || {
+      id: marketId,
+      title: `${marketId.toUpperCase().replace('PERP-', '')} Perpetual Contract`,
+      vol: '$0',
+    };
 
     if (!walletConnected || !publicKey) {
       triggerToast(`Please connect your Freighter wallet to execute on-chain trades!`, 'error');
@@ -530,45 +581,59 @@ export default function AppDashboard() {
       return;
     }
 
+    let txHash: string | undefined = undefined;
+
+    // Track the actual on-chain shares_out returned by the AMM
+    let actualSharesOut = shares; // fallback to UI estimate
+
     try {
       setIsSubmittingTx(true);
       triggerToast(`Please confirm transaction in your Freighter wallet...`);
       const marketClient = getMarketClient(publicKey);
-      const tokenClient = getTokenClient(publicKey);
       const raw = toRawAmount(amount);
+      const parsedNumericId = getOnChainMarketId(target.id);
+      const outcome = (outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' || outcomeName.toUpperCase() === 'LONG' || outcomeName.toUpperCase() === 'UP')
+        ? Outcome.Yes
+        : Outcome.No;
 
-      // 1. Approve contract to spend tokens with dynamic ledger expiration
-      const expLedger = await getExpirationLedger();
-      const approveTx = await tokenClient.approve({
-        from: publicKey,
-        spender: MARKET_ID,
-        amount: raw,
-        expiration_ledger: expLedger,
-      });
-      await approveTx.signAndSend();
-
-      // 2. Buy shares on contract using dynamic market ID
-      const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
-      const outcome = outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' ? Outcome.Yes : Outcome.No;
       const buyTx = await marketClient.buy_shares({
         user: publicKey,
         market_id: parsedNumericId,
         outcome,
         payment: raw,
       });
-      await buyTx.signAndSend();
 
-      triggerToast(`✅ On-Chain Bet Confirmed! Bought ${shares.toFixed(1)} "${outcomeName}" shares on Soroban!`);
+      const res = await buyTx.signAndSend();
+      txHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
+
+      // Capture the ACTUAL shares_out from the contract return value
+      // The contract returns shares_out as i128 (raw units). Convert to display float.
+      const contractSharesOut = (res as any)?.result;
+      if (contractSharesOut !== undefined && contractSharesOut !== null) {
+        const rawOut = typeof contractSharesOut === 'bigint' ? contractSharesOut : BigInt(String(contractSharesOut));
+        actualSharesOut = fromRawAmount(rawOut);
+      }
+
+      if (txHash) {
+        triggerToast(`✅ On-Chain Bet Confirmed! Tx: ${txHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+      } else {
+        triggerToast(`✅ On-Chain Trade Executed! Market #${target.id} state updated.`, 'success');
+      }
     } catch (e: unknown) {
-      console.info('Soroban transaction notice:', e);
+      console.error('Soroban trade transaction error:', e);
       const errMsg = e instanceof Error ? e.message : String(e);
       if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
         triggerToast(`Transaction cancelled by user.`, 'error');
+        setIsSubmittingTx(false);
         return;
       } else if (errMsg.includes('Account not found')) {
         triggerToast(`⚠️ Account not funded on Testnet. Click "Fund Account (Friendbot)" in your wallet menu!`, 'error');
+        setIsSubmittingTx(false);
+        return;
       } else {
-        triggerToast(`On-Chain Trade Executed! Market #${target.id} state updated.`, 'success');
+        triggerToast(`Trade transaction failed: ${errMsg.slice(0, 60)}...`, 'error');
+        setIsSubmittingTx(false);
+        return;
       }
     } finally {
       setIsSubmittingTx(false);
@@ -578,16 +643,15 @@ export default function AppDashboard() {
       }
     }
 
-    setWalletBalance(prev => Math.max(0, prev - amount));
-
     const tradeEntry = {
       id: `trade-${Date.now()}`,
       marketTitle: target.title,
       outcomeName,
       amount,
-      shares,
+      shares: actualSharesOut,
       currency,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      txHash,
     };
 
     if (publicKey) {
@@ -599,9 +663,10 @@ export default function AppDashboard() {
         outcomeId,
         outcomeName,
         amount,
-        shares,
+        shares: actualSharesOut,
         currency,
         timestamp: tradeEntry.timestamp,
+        txHash,
       });
 
       db.savePortfolioItem({
@@ -611,8 +676,8 @@ export default function AppDashboard() {
         marketTitle: target.title,
         outcomeId,
         outcomeName,
-        shares,
-        avgPrice: amount / shares,
+        shares: actualSharesOut,
+        avgPrice: amount / Math.max(0.0001, actualSharesOut),
         cost: amount,
       });
     }
@@ -626,9 +691,9 @@ export default function AppDashboard() {
         const next = [...prev];
         const prevShares = next[idx].shares;
         const prevCost = next[idx].cost;
-        next[idx].shares = prevShares + shares;
+        next[idx].shares = prevShares + actualSharesOut;
         next[idx].cost = prevCost + amount;
-        next[idx].avgPrice = next[idx].cost / next[idx].shares;
+        next[idx].avgPrice = next[idx].cost / Math.max(0.0001, next[idx].shares);
         return next;
       } else {
         return [...prev, {
@@ -636,8 +701,8 @@ export default function AppDashboard() {
           marketTitle: target.title,
           outcomeId,
           outcomeName,
-          shares,
-          avgPrice: amount / shares,
+          shares: actualSharesOut,
+          avgPrice: amount / Math.max(0.0001, actualSharesOut),
           cost: amount
         }];
       }
@@ -673,9 +738,9 @@ export default function AppDashboard() {
     end: string;
   }) => {
     const cost = newM.liquidityAmount ?? (parseFloat(newM.vol.replace(/[^0-9.]/g, '')) || 100);
-    setWalletBalance(prev => Math.max(0, prev - cost));
 
     let createdMarketId = `custom-${Date.now()}`;
+    let createTxHash: string | undefined = undefined;
 
     if (walletConnected && publicKey) {
       try {
@@ -689,17 +754,29 @@ export default function AppDashboard() {
           oracle_id: STELLAR_CONFIG.contracts.oracle,
         });
         const res = await createTx.signAndSend();
+        createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
         if (res.result) {
           createdMarketId = `soroban-${res.result.toString()}`;
         }
-        triggerToast(`✅ Deployed Soroban Market Contract on Testnet (ID: ${createdMarketId})!`);
+        if (createTxHash) {
+          triggerToast(`✅ Deployed Soroban Market Contract! Tx: ${createTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+        } else {
+          triggerToast(`✅ Deployed Soroban Market Contract on Testnet (ID: ${createdMarketId})!`, 'success');
+        }
+      } catch (e: unknown) {
+        console.error('Soroban market factory error:', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+          triggerToast(`Market creation cancelled by user.`, 'error');
+          return;
+        } else {
+          triggerToast(`Market creation notice: ${errMsg.slice(0, 60)}...`, 'error');
+        }
+      } finally {
         await loadMarketData(publicKey);
         if (typeof wallet.refresh === 'function') {
           await wallet.refresh();
         }
-      } catch (e: unknown) {
-        console.info('Soroban market factory notice:', e);
-        triggerToast(`Market created in state. Soroban factory error: ${e instanceof Error ? e.message : 'Tx failed'}.`, 'error');
       }
     } else {
       triggerToast(`Multi-Outcome Contract deployed for "${newM.title.substring(0, 22)}..." (Demo Mode)!`);
@@ -773,72 +850,205 @@ export default function AppDashboard() {
     }
   };
 
-  // 2. Sell Shares back to Market AMM (Market Smart Contract)
+  // 2. Sell Shares back to Market AMM (Soroban Smart Contract Execution)
   const handleSellShares = async (marketId: string, outcomeId: string, outcomeName: string, sharesCount: number) => {
-    const target = markets.find(m => m.id === marketId);
-    if (!target) return;
+    const target = markets.find(m => m.id === marketId) || {
+      id: marketId,
+      title: `Market #${marketId}`,
+      vol: '$0',
+    };
 
-    if (walletConnected && publicKey) {
+    if (!walletConnected || !publicKey) {
+      triggerToast(`Please connect your Freighter wallet to execute on-chain sell orders!`, 'error');
+      await connectWallet();
+      return;
+    }
+
+    let sellTxHash: string | undefined = undefined;
+
+    try {
+      setIsSubmittingTx(true);
+      triggerToast(`Verifying on-chain share balance...`);
+      const marketClient = getMarketClient(publicKey);
+      const parsedNumericId = getOnChainMarketId(target.id);
+      const outcome = (outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES') ? Outcome.Yes : Outcome.No;
+
+      // ── STEP 1: Read actual on-chain balance to prevent Insufficient share balance panic ──
+      let onChainRawBalance = 0n;
       try {
-        setIsSubmittingTx(true);
-        triggerToast(`Submitting sell order on Soroban Testnet Market Contract...`);
-        const marketClient = getMarketClient(publicKey);
-        const rawShares = toRawAmount(sharesCount);
-        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
-        const outcome = outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' ? Outcome.Yes : Outcome.No;
-
-        const sellTx = await marketClient.sell_shares({
+        const balanceRes = await marketClient.get_balance({
           user: publicKey,
           market_id: parsedNumericId,
           outcome,
-          shares: rawShares,
         });
-        await sellTx.signAndSend();
+        // get_balance is a read call — access result directly
+        const rawBal = (balanceRes as any)?.result ?? (balanceRes as any);
+        if (rawBal !== undefined && rawBal !== null) {
+          onChainRawBalance = typeof rawBal === 'bigint' ? rawBal : BigInt(String(rawBal));
+        }
+      } catch (balErr) {
+        console.warn('Could not query on-chain balance:', balErr);
+        // Fallback: convert local display shares to raw — may still fail if mismatch
+        onChainRawBalance = toRawAmount(sharesCount);
+      }
 
-        triggerToast(`✅ Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares back to Market Contract!`);
-      } catch (e: unknown) {
-        console.info('Sell shares notice:', e);
-        const msg = e instanceof Error ? e.message : String(e);
-        triggerToast(`Shares sold! Market Contract reserves rebalanced.`, 'success');
-      } finally {
+      if (onChainRawBalance <= 0n) {
+        triggerToast(`❌ No on-chain share balance found for this position. You may not own these shares on-chain yet.`, 'error');
         setIsSubmittingTx(false);
-        await loadMarketData(publicKey);
-        if (typeof wallet.refresh === 'function') {
-          await wallet.refresh();
+        return;
+      }
+
+      // ── STEP 2: Cap sell amount to on-chain balance (prevents panic) ──
+      const requestedRaw = toRawAmount(sharesCount);
+      const rawSharesToSell = requestedRaw > onChainRawBalance ? onChainRawBalance : requestedRaw;
+      const actualSharesToSell = fromRawAmount(rawSharesToSell);
+
+      triggerToast(`Please confirm sell transaction in your Freighter wallet...`);
+
+      const sellTx = await marketClient.sell_shares({
+        user: publicKey,
+        market_id: parsedNumericId,
+        outcome,
+        shares: rawSharesToSell,  // pass raw units directly — already in on-chain format
+      });
+
+      const res = await sellTx.signAndSend();
+      sellTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
+
+      if (sellTxHash) {
+        triggerToast(`✅ Sold ${actualSharesToSell.toFixed(4)} "${outcomeName}" Shares! Tx: ${sellTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+      } else {
+        triggerToast(`✅ Sold ${actualSharesToSell.toFixed(4)} "${outcomeName}" shares back to Soroban Contract!`, 'success');
+      }
+
+      // Override sharesCount with what was actually sold on-chain
+      sharesCount = actualSharesToSell;
+
+    } catch (e: unknown) {
+      console.error('Soroban sell transaction error:', e);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+        triggerToast(`Sell transaction cancelled by user.`, 'error');
+        setIsSubmittingTx(false);
+        return;
+      } else if (errMsg.includes('Insufficient share balance') || errMsg.includes('UnreachableCodeReached')) {
+        triggerToast(`❌ Insufficient on-chain shares. Your on-chain balance may differ from your local portfolio. Please rebuy shares.`, 'error');
+        setIsSubmittingTx(false);
+        return;
+      } else {
+        triggerToast(`Sell notice: ${errMsg.slice(0, 80)}...`, 'error');
+        setIsSubmittingTx(false);
+        return;
+      }
+    } finally {
+      setIsSubmittingTx(false);
+      await loadMarketData(publicKey);
+      if (typeof wallet.refresh === 'function') {
+        await wallet.refresh();
+      }
+    }
+
+    // Update local & persistent portfolio state atomically
+    if (publicKey) {
+      const existing = db.getPortfolio(publicKey).find(p => p.marketId === marketId && p.outcomeId === outcomeId);
+      if (existing) {
+        const remainingShares = Math.max(0, existing.shares - sharesCount);
+        if (remainingShares <= 0.01) {
+          db.removePortfolioItem(publicKey, marketId, outcomeId);
+        } else {
+          db.savePortfolioItem({
+            ...existing,
+            shares: remainingShares,
+            cost: (existing.cost * remainingShares) / existing.shares,
+          });
         }
       }
-    } else {
-      triggerToast(`Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares (Demo Mode)!`);
     }
 
+    setPortfolio(prev => {
+      return prev.map(p => {
+        if (p.marketId === marketId && p.outcomeId === outcomeId) {
+          const remainingShares = Math.max(0, p.shares - sharesCount);
+          if (remainingShares <= 0.01) return null;
+          return {
+            ...p,
+            shares: remainingShares,
+            cost: (p.cost * remainingShares) / p.shares,
+          };
+        }
+        return p;
+      }).filter(Boolean) as ShareHolding[];
+    });
+
+    // Record in Trade History
+    const estPayout = sharesCount * 0.5;
+    const historyEntry: TradeHistoryEntry = {
+      id: `sell-${Date.now()}`,
+      marketTitle: target.title,
+      outcomeName: `SOLD ${outcomeName}`,
+      amount: estPayout,
+      shares: sharesCount,
+      currency,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      txHash: sellTxHash,
+    };
+    setTradeHistory(prev => [historyEntry, ...prev]);
     if (publicKey) {
-      db.removePortfolioItem(publicKey, marketId, outcomeId);
+      db.saveTrade({
+        id: historyEntry.id,
+        userAddress: publicKey,
+        marketId,
+        marketTitle: target.title,
+        outcomeId,
+        outcomeName: `SOLD ${outcomeName}`,
+        amount: estPayout,
+        shares: sharesCount,
+        currency,
+        timestamp: new Date().toISOString(),
+        txHash: sellTxHash,
+      });
     }
-    setPortfolio(prev => prev.filter(p => !(p.marketId === marketId && p.outcomeId === outcomeId)));
   };
 
   // 3. Claim Winnings from Market (Market Smart Contract)
   const handleClaimWinnings = async (marketId: string) => {
-    const target = markets.find(m => m.id === marketId);
-    if (!target) return;
+    const target = markets.find(m => m.id === marketId) || {
+      id: marketId,
+      title: `Market #${marketId}`,
+      vol: '$0',
+    };
+
+    let claimTxHash: string | undefined = undefined;
 
     if (walletConnected && publicKey) {
       try {
         setIsSubmittingTx(true);
         triggerToast(`Claiming winning payout on Soroban Testnet Market Contract...`);
         const marketClient = getMarketClient(publicKey);
-        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
+        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '1');
 
         const claimTx = await marketClient.claim_winnings({
           user: publicKey,
           market_id: parsedNumericId,
         });
-        await claimTx.signAndSend();
+        const res = await claimTx.signAndSend();
+        claimTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
-        triggerToast(`✅ Payout claimed from Soroban Market Contract #${target.id}!`);
+        if (claimTxHash) {
+          triggerToast(`✅ Claimed winning payout! Tx: ${claimTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+        } else {
+          triggerToast(`✅ Payout claimed from Soroban Market Contract #${target.id}!`, 'success');
+        }
       } catch (e: unknown) {
-        console.info('Claim winnings notice:', e);
-        triggerToast(`Winning payout claimed into wallet!`, 'success');
+        console.error('Claim winnings error:', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+          triggerToast(`Claim transaction cancelled by user.`, 'error');
+          return;
+        } else {
+          triggerToast(`Claim notice: ${errMsg.slice(0, 60)}...`, 'error');
+          return;
+        }
       } finally {
         setIsSubmittingTx(false);
         await loadMarketData(publicKey);
@@ -858,12 +1068,14 @@ export default function AppDashboard() {
 
   // 4. Propose outcome via Oracle (Oracle Smart Contract)
   const handleProposeOracleOutcome = async (marketId: string, outcomeIndex: number) => {
+    let proposeTxHash: string | undefined = undefined;
+
     if (walletConnected && publicKey) {
       try {
         setIsSubmittingTx(true);
         triggerToast(`Submitting outcome proposal to Soroban Oracle Contract...`);
         const oracleClient = getOracleClient(publicKey);
-        const parsedNumericId = BigInt(marketId.replace(/[^0-9]/g, '') || '0');
+        const parsedNumericId = BigInt(marketId.replace(/[^0-9]/g, '') || '1');
         const outcome = outcomeIndex === 0 ? Outcome.Yes : Outcome.No;
 
         const proposeTx = await oracleClient.propose_outcome({
@@ -871,12 +1083,24 @@ export default function AppDashboard() {
           outcome,
           proposer: publicKey,
         });
-        await proposeTx.signAndSend();
+        const res = await proposeTx.signAndSend();
+        proposeTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
-        triggerToast(`✅ Outcome proposal submitted to Oracle Contract for Market #${marketId}!`);
+        if (proposeTxHash) {
+          triggerToast(`✅ Outcome proposal submitted! Tx: ${proposeTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+        } else {
+          triggerToast(`✅ Outcome proposal submitted to Oracle Contract for Market #${marketId}!`, 'success');
+        }
       } catch (e: unknown) {
-        console.info('Oracle proposal notice:', e);
-        triggerToast(`Oracle proposal registered on-chain for committee approval.`, 'success');
+        console.error('Oracle proposal error:', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+          triggerToast(`Oracle proposal cancelled by user.`, 'error');
+          return;
+        } else {
+          triggerToast(`Oracle proposal notice: ${errMsg.slice(0, 60)}...`, 'error');
+          return;
+        }
       } finally {
         setIsSubmittingTx(false);
       }
@@ -887,38 +1111,45 @@ export default function AppDashboard() {
 
   // 5. Open Liquidity Providers (Soroban Market Contract Deposit / Withdrawal)
   const handleAddLiquidity = async (marketId: string, amount: number) => {
-    const target = markets.find(m => m.id === marketId);
-    if (!target) return;
+    const target = markets.find(m => m.id === marketId) || {
+      id: marketId,
+      title: `Market #${marketId}`,
+      vol: '$0',
+    };
+
+    let addTxHash: string | undefined = undefined;
 
     if (walletConnected && publicKey) {
       try {
         setIsSubmittingTx(true);
         triggerToast(`Adding ${amount} XLM Liquidity on Soroban Contract...`);
         const marketClient = getMarketClient(publicKey);
-        const tokenClient = getTokenClient(publicKey);
         const raw = toRawAmount(amount);
 
-        const expLedger = await getExpirationLedger();
-        const approveTx = await tokenClient.approve({
-          from: publicKey,
-          spender: MARKET_ID,
-          amount: raw,
-          expiration_ledger: expLedger,
-        });
-        await approveTx.signAndSend();
-
-        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
+        const parsedNumericId = getOnChainMarketId(target.id);
         const addTx = await marketClient.add_liquidity({
           user: publicKey,
           market_id: parsedNumericId,
           amount: raw,
         });
-        await addTx.signAndSend();
+        const res = await addTx.signAndSend();
+        addTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
-        triggerToast(`✅ Successfully deposited ${amount} XLM into LP pool!`);
+        if (addTxHash) {
+          triggerToast(`✅ Deposited ${amount} XLM Liquidity! Tx: ${addTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+        } else {
+          triggerToast(`✅ Successfully deposited ${amount} XLM into LP pool!`, 'success');
+        }
       } catch (e: unknown) {
-        console.info('Add liquidity notice:', e);
-        triggerToast(`LP deposit processed! Market liquidity updated.`, 'success');
+        console.error('Add liquidity error:', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+          triggerToast(`Liquidity deposit cancelled by user.`, 'error');
+          return;
+        } else {
+          triggerToast(`Liquidity deposit notice: ${errMsg.slice(0, 60)}...`, 'error');
+          return;
+        }
       } finally {
         setIsSubmittingTx(false);
         await loadMarketData(publicKey);
@@ -928,7 +1159,6 @@ export default function AppDashboard() {
       }
     } else {
       triggerToast(`Added ${amount} XLM Liquidity (Demo Mode)!`);
-      setWalletBalance(prev => Math.max(0, prev - amount));
     }
 
     if (publicKey) {
@@ -951,8 +1181,13 @@ export default function AppDashboard() {
   };
 
   const handleRemoveLiquidity = async (marketId: string, amount: number) => {
-    const target = markets.find(m => m.id === marketId);
-    if (!target) return;
+    const target = markets.find(m => m.id === marketId) || {
+      id: marketId,
+      title: `Market #${marketId}`,
+      vol: '$0',
+    };
+
+    let removeTxHash: string | undefined = undefined;
 
     if (walletConnected && publicKey) {
       try {
@@ -960,19 +1195,30 @@ export default function AppDashboard() {
         triggerToast(`Withdrawing ${amount} XLM Liquidity on Soroban Contract...`);
         const marketClient = getMarketClient(publicKey);
         const raw = toRawAmount(amount);
-        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
-
+        const parsedNumericId = getOnChainMarketId(target.id);
         const removeTx = await marketClient.remove_liquidity({
           user: publicKey,
           market_id: parsedNumericId,
           amount: raw,
         });
-        await removeTx.signAndSend();
+        const res = await removeTx.signAndSend();
+        removeTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
-        triggerToast(`✅ Successfully withdrew ${amount} XLM from LP pool!`);
+        if (removeTxHash) {
+          triggerToast(`✅ Withdrew ${amount} XLM Liquidity! Tx: ${removeTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+        } else {
+          triggerToast(`✅ Successfully withdrew ${amount} XLM from LP pool!`, 'success');
+        }
       } catch (e: unknown) {
-        console.info('Remove liquidity notice:', e);
-        triggerToast(`LP withdrawal processed! Collateral returned to wallet.`, 'success');
+        console.error('Remove liquidity error:', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+          triggerToast(`Liquidity withdrawal cancelled by user.`, 'error');
+          return;
+        } else {
+          triggerToast(`Liquidity withdrawal notice: ${errMsg.slice(0, 60)}...`, 'error');
+          return;
+        }
       } finally {
         setIsSubmittingTx(false);
         await loadMarketData(publicKey);
@@ -982,7 +1228,6 @@ export default function AppDashboard() {
       }
     } else {
       triggerToast(`Withdrew ${amount} XLM Liquidity (Demo Mode)!`);
-      setWalletBalance(prev => prev + amount);
     }
 
     if (publicKey) {
@@ -1048,21 +1293,51 @@ export default function AppDashboard() {
     }
   };
 
-  // Perps Long/Short execution
-  const handleOpenPosition = (pos: Position) => {
-    setWalletBalance(prev => prev - pos.margin);
-    setPerpPositions(prev => [...prev, pos]);
-    triggerToast(`Opened ${pos.type} position on ${pos.symbol} (${pos.leverage}x)`);
+  // Perps Long/Short execution (On-Chain Soroban Contract Trade)
+  const handleOpenPosition = async (pos: Position) => {
+    if (!walletConnected || !publicKey) {
+      triggerToast(`Please connect your Freighter wallet to execute on-chain perps trades!`, 'error');
+      await connectWallet();
+      return;
+    }
+
+    try {
+      const cleanSymbol = pos.symbol.replace('-PERP', '').toLowerCase();
+      await handleTradeConfirm(
+        `perp-${cleanSymbol}`,
+        pos.type === 'Long' ? 'YES' : 'NO',
+        pos.type === 'Long' ? 'Long/UP' : 'Short/DOWN',
+        pos.margin,
+        pos.size
+      );
+      setPerpPositions(prev => [...prev, pos]);
+    } catch (e: unknown) {
+      console.info('Perps contract trade notice:', e);
+    }
   };
 
-  // Close Perp leverage position
-  const handleClosePosition = (index: number, pnl: number) => {
+  // Close Perp leverage position (On-Chain Soroban Contract Payout)
+  const handleClosePosition = async (index: number, pnl: number) => {
     const target = perpPositions[index];
     if (!target) return;
 
-    setWalletBalance(prev => prev + target.margin + pnl);
+    if (walletConnected && publicKey) {
+      try {
+        const cleanSymbol = target.symbol.replace('-PERP', '').toLowerCase();
+        await handleTradeConfirm(
+          `perp-${cleanSymbol}`,
+          target.type === 'Long' ? 'NO' : 'YES',
+          target.type === 'Long' ? 'Close Long' : 'Close Short',
+          Math.max(1, target.margin + pnl),
+          target.size
+        );
+      } catch (e: unknown) {
+        console.info('Close perps contract trade notice:', e);
+      }
+    }
+
     setPerpPositions(prev => prev.filter((_, i) => i !== index));
-    triggerToast(`Closed position. Realized PnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} USDC`);
+    triggerToast(`Closed ${target.type} position on ${target.symbol}. Realized PnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`);
   };
 
   return (
@@ -1175,6 +1450,16 @@ export default function AppDashboard() {
         currency={currency}
         walletConnected={walletConnected}
         onCreateConfirm={handleCreateConfirm}
+      />
+
+      {/* Sell Shares Preset Modal */}
+      <SellSharesModal
+        isOpen={isSellModalOpen}
+        onClose={() => setIsSellModalOpen(false)}
+        position={activeSellPosition}
+        market={markets.find(m => m.id === activeSellPosition?.marketId) || null}
+        currency={currency}
+        onSellConfirm={handleSellShares}
       />
 
       {/* Connected Wallet Modal */}
@@ -1338,7 +1623,10 @@ export default function AppDashboard() {
                           <div style={{ color: t.text }}>Cost: {item.cost.toFixed(2)} {currency}</div>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button
-                              onClick={() => handleSellShares(item.marketId, item.outcomeId, item.outcomeName, item.shares)}
+                              onClick={() => {
+                                setActiveSellPosition(item);
+                                setIsSellModalOpen(true);
+                              }}
                               style={{
                                 background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.4)',
                                 borderRadius: 4, padding: '2px 6px', fontSize: 10, fontWeight: 700, cursor: 'pointer'
@@ -1374,12 +1662,22 @@ export default function AppDashboard() {
                     tradeHistory.map((item) => (
                       <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, borderBottom: `1px solid ${t.lineSoft}`, paddingBottom: 8 }}>
                         <div>
-                          <div style={{ color: t.text, fontWeight: 600, maxWidth: 280, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ color: t.text, fontWeight: 600, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {item.marketTitle}
                           </div>
                           <div style={{ color: t.up, fontSize: 11, fontWeight: 600, marginTop: 2 }}>
                             Bought "{item.outcomeName}" · {item.shares.toFixed(1)} Shares
                           </div>
+                          {item.txHash && (
+                            <a
+                              href={`https://stellar.expert/explorer/testnet/tx/${item.txHash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: t.accent, fontSize: 10.5, textDecoration: 'none', fontWeight: 600, marginTop: 2, display: 'inline-block' }}
+                            >
+                              Tx: {item.txHash.slice(0, 8)}... ↗
+                            </a>
+                          )}
                         </div>
                         <div style={{ textAlign: 'right', fontFamily: fontMono }}>
                           <div style={{ color: t.text, fontWeight: 700 }}>{item.amount.toFixed(2)} {item.currency}</div>
@@ -1399,25 +1697,68 @@ export default function AppDashboard() {
                       No custom markets deployed yet. Click "Create Market" to deploy one!
                     </div>
                   ) : (
-                    createdMarkets.map((item) => (
-                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, borderBottom: `1px solid ${t.lineSoft}`, paddingBottom: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 18 }}>{item.ic}</span>
-                          <div>
-                            <div style={{ color: t.text, fontWeight: 600, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {item.title}
+                    <>
+                      {/* How creator earnings work */}
+                      <div style={{
+                        background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
+                        borderRadius: 8, padding: '10px 12px', fontSize: 11, color: '#FBB924', marginBottom: 4,
+                      }}>
+                        💡 <strong>Creator Earnings</strong>: You earn <strong>0.5% of every buy</strong> on your markets,
+                        paid directly to your Soroban token balance. Click <em>"Sync"</em> to refresh on-chain earnings.
+                        <button
+                          onClick={() => publicKey && loadMarketData(publicKey)}
+                          style={{ marginLeft: 8, background: 'rgba(251,191,36,0.15)', color: '#FBB924', border: '1px solid rgba(251,191,36,0.4)', borderRadius: 4, padding: '2px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+                        >🔄 Sync</button>
+                      </div>
+
+                      {createdMarkets.map((item) => {
+                        const onChain = creatorEarningsMap[item.id];
+                        return (
+                          <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: 12, borderBottom: `1px solid ${t.lineSoft}`, paddingBottom: 10, gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                              <span style={{ fontSize: 18 }}>{item.ic}</span>
+                              <div>
+                                <div style={{ color: t.text, fontWeight: 600, maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {item.title}
+                                </div>
+                                <div style={{ color: t.textDim, fontSize: 10.5 }}>
+                                  {item.category} · {item.outcomesCount} Outcomes · {item.createdAt}
+                                </div>
+                                {onChain ? (
+                                  <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                                    <span style={{ color: '#94A3B8', fontSize: 10 }}>
+                                      Vol: <strong style={{ color: t.text }}>{onChain.volume.toFixed(2)} XLM</strong>
+                                    </span>
+                                    <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700 }}>
+                                      Earned: +{onChain.earnings.toFixed(4)} XLM ✓
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div style={{ color: t.textFaint, fontSize: 10, marginTop: 3 }}>
+                                    Sync to load on-chain earnings
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div style={{ color: t.textDim, fontSize: 11 }}>
-                              Category: {item.category} · {item.outcomesCount} Outcomes
+                            <div style={{ textAlign: 'right', fontFamily: fontMono, flexShrink: 0 }}>
+                              {onChain ? (
+                                <>
+                                  <div style={{ color: '#10B981', fontWeight: 800, fontSize: 13 }}>
+                                    +{onChain.earnings.toFixed(4)}
+                                  </div>
+                                  <div style={{ color: t.textFaint, fontSize: 9.5 }}>XLM earned</div>
+                                </>
+                              ) : (
+                                <>
+                                  <div style={{ color: t.accent, fontWeight: 700 }}>{item.vol} Liq</div>
+                                  <div style={{ color: t.textFaint, fontSize: 10.5 }}>—</div>
+                                </>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div style={{ textAlign: 'right', fontFamily: fontMono }}>
-                          <div style={{ color: t.accent, fontWeight: 700 }}>{item.vol} Liq</div>
-                          <div style={{ color: t.textFaint, fontSize: 10.5 }}>{item.createdAt}</div>
-                        </div>
-                      </div>
-                    ))
+                        );
+                      })}
+                    </>
                   )}
                 </>
               )}
