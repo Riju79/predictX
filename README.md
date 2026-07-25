@@ -23,7 +23,7 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🚀 Live Demo](#) · [📋 Feedback Form](https://forms.gle/LBZUh6e13CZmzpzm8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 Docs](#architecture)
+[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/LBZUh6e13CZmzpzm8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 Docs](#architecture)
 
 </div>
 
