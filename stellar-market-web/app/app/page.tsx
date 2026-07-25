@@ -454,13 +454,25 @@ export default function AppDashboard() {
   const loadMarketData = async (pk: string) => {
     try {
       if (!pk) return;
-      // Omit source account for read simulation so unfunded testnet accounts do not throw 'Account not found'
+      const res = await fetch(`https://horizon-testnet.stellar.org/accounts/${pk}`);
+      if (res.ok) {
+        const data = await res.json();
+        const native = data.balances?.find((b: any) => b.asset_type === 'native');
+        if (native) {
+          const bal = parseFloat(native.balance);
+          if (!isNaN(bal)) {
+            setWalletBalance(bal);
+            return;
+          }
+        }
+      }
+
       const tokenClient = getTokenClient();
       const balRes = await tokenClient.balance({ id: pk });
       if (balRes && balRes.result !== undefined) {
         const rawBal = balRes.result as bigint;
         const numBal = fromRawAmount(rawBal);
-        if (!isNaN(numBal)) {
+        if (!isNaN(numBal) && numBal > 0) {
           setWalletBalance(numBal);
         }
       }
@@ -484,13 +496,16 @@ export default function AppDashboard() {
       if (userPort && userPort.length > 0) {
         setPortfolio(userPort);
       }
+      if (wallet.balance && wallet.balance > 0) {
+        setWalletBalance(wallet.balance);
+      }
       loadMarketData(publicKey);
     } else {
       setTradeHistory([]);
       setCreatedMarkets([]);
       setPortfolio([]);
     }
-  }, [walletConnected, publicKey]);
+  }, [walletConnected, publicKey, wallet.balance]);
 
 
 

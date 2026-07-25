@@ -50,27 +50,38 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     setTimeout(() => setToastMessage(null), 3000);
   }, []);
 
-  // Fetch token balance from Soroban Testnet token contract
+  // Fetch balance from Horizon Testnet API & Soroban Token Contract
   const fetchBalances = useCallback(async (pk: string) => {
     if (!pk) return { balance: 0, usdcBalance: 0 };
+    let nativeBal = 0;
     try {
-      // Omit source account for read simulation so unfunded testnet accounts do not throw 'Account not found'
+      const res = await fetch(`https://horizon-testnet.stellar.org/accounts/${pk}`);
+      if (res.ok) {
+        const data = await res.json();
+        const native = data.balances?.find((b: any) => b.asset_type === 'native');
+        if (native) {
+          nativeBal = parseFloat(native.balance);
+        }
+      }
+    } catch (e) {
+      console.info('Horizon balance fetch notice:', e);
+    }
+
+    try {
       const tokenClient = getTokenClient();
       const balRes = await tokenClient.balance({ id: pk });
       if (balRes && balRes.result !== undefined) {
-        const numBal = fromRawAmount(balRes.result as bigint);
-        if (!isNaN(numBal)) {
-          return { balance: numBal, usdcBalance: parseFloat((numBal * 0.12).toFixed(2)) };
+        const tokenBal = fromRawAmount(balRes.result as bigint);
+        if (!isNaN(tokenBal) && tokenBal > 0) {
+          return { balance: tokenBal, usdcBalance: parseFloat((tokenBal * 0.12).toFixed(2)) };
         }
       }
     } catch (e: any) {
-      if (e?.message?.includes('Account not found')) {
-        console.info(`Account ${pk} is not funded on Testnet yet.`);
-      } else {
-        console.info('Soroban RPC fetch notice:', e?.message || e);
+      if (!e?.message?.includes('Account not found')) {
+        console.info('Soroban token balance fetch notice:', e?.message || e);
       }
     }
-    return { balance: 0, usdcBalance: 0 };
+    return { balance: nativeBal, usdcBalance: parseFloat((nativeBal * 0.12).toFixed(2)) };
   }, []);
 
 
