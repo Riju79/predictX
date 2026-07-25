@@ -461,15 +461,19 @@ export default function Home() {
 
   const loadMarketData = async (pk: string) => {
     try {
-      const tokenClient = getTokenClient(pk);
+      const tokenClient = getTokenClient();
       const balRes = await tokenClient.balance({ id: pk });
-      setTokenBalance(fromRawAmount(balRes.result as bigint));
-    } catch (e) {
-      console.error('Error loading token balance:', e);
+      if (balRes && balRes.result !== undefined) {
+        setTokenBalance(fromRawAmount(balRes.result as bigint));
+      }
+    } catch (e: any) {
+      if (!e?.message?.includes('Account not found')) {
+        console.warn('Error loading token balance:', e);
+      }
     }
 
     try {
-      const marketClient = getMarketClient(pk);
+      const marketClient = getMarketClient();
       const stateRes = await marketClient.get_market_state({ market_id: MARKET_NUMERIC_ID });
       if (stateRes?.result) {
         setMarketState(stateRes.result as MarketState);

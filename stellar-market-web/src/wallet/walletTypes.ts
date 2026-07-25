@@ -12,6 +12,7 @@ export interface WalletState {
   networkPassphrase: string;
   walletName: string;
   isLoading: boolean;
+  isFunding?: boolean;
   isFreighterInstalled: boolean;
   isWrongNetwork: boolean;
   networkError: string | null;
@@ -26,4 +27,6 @@ export interface WalletContextType extends WalletState {
   refresh: () => Promise<void>;
   copyAddress: () => void;
   openStellarExpert: () => void;
+  fundAccount: () => Promise<void>;
 }
+

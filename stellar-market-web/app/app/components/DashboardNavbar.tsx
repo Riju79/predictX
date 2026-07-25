@@ -14,6 +14,7 @@ interface DashboardNavbarProps {
   walletBalance: number;
   onCreateMarketClick: () => void;
   onWalletClick: () => void;
+  onOpenActivity?: (tab?: 'portfolio' | 'history' | 'created' | 'contracts') => void;
   markets: Market[];
   onSelectMarket: (m: Market) => void;
   walletConnected?: boolean;
@@ -45,6 +46,7 @@ export default function DashboardNavbar({
   walletBalance,
   onCreateMarketClick,
   onWalletClick,
+  onOpenActivity,
   markets,
   onSelectMarket,
   walletConnected = false,
@@ -223,7 +225,7 @@ export default function DashboardNavbar({
             Create Market
           </button>
 
-          <ConnectWalletButton />
+          <ConnectWalletButton onOpenActivity={onOpenActivity || (tab => onWalletClick())} />
 
           {/* Currency Toggle Switcher (XLM / USDC) */}
           <button

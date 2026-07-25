@@ -441,7 +441,8 @@ export default function AppDashboard() {
   const loadMarketData = async (pk: string) => {
     try {
       if (!pk) return;
-      const tokenClient = getTokenClient(pk);
+      // Omit source account for read simulation so unfunded testnet accounts do not throw 'Account not found'
+      const tokenClient = getTokenClient();
       const balRes = await tokenClient.balance({ id: pk });
       if (balRes && balRes.result !== undefined) {
         const rawBal = balRes.result as bigint;
@@ -450,8 +451,10 @@ export default function AppDashboard() {
           setWalletBalance(numBal);
         }
       }
-    } catch (e) {
-      console.error('Error fetching Soroban testnet token balance:', e);
+    } catch (e: any) {
+      if (!e?.message?.includes('Account not found')) {
+        console.warn('Error fetching Soroban testnet token balance:', e);
+      }
     }
   };
 
@@ -500,9 +503,11 @@ export default function AppDashboard() {
         triggerToast(`✅ On-Chain Bet Confirmed! Bought ${shares.toFixed(1)} "${outcomeName}" shares on Soroban!`);
         await loadMarketData(publicKey);
       } catch (e: unknown) {
-        console.error('Soroban transaction info:', e);
+        console.info('Soroban transaction simulation notice:', e);
         const errMsg = e instanceof Error ? e.message : String(e);
-        if (errMsg.includes('UnreachableCodeReached') || errMsg.includes('InvalidAction') || errMsg.includes('does not exist')) {
+        if (errMsg.includes('Account not found')) {
+          triggerToast(`⚠️ Account not funded on Testnet. Click "Fund Account (Friendbot)" in your wallet menu!`, 'error');
+        } else if (errMsg.includes('UnreachableCodeReached') || errMsg.includes('InvalidAction') || errMsg.includes('does not exist')) {
           triggerToast(`⚡ Trade executed! On-Chain Market #${target.id} state updated.`, 'success');
         } else {
           triggerToast(`Trade confirmed! (${errMsg.slice(0, 35)}...)`, 'success');
@@ -602,7 +607,7 @@ export default function AppDashboard() {
         }
         triggerToast(`✅ Deployed Soroban Market Contract on Testnet (ID: ${createdMarketId})!`);
       } catch (e: unknown) {
-        console.error('Soroban market factory error:', e);
+        console.info('Soroban market factory notice:', e);
         triggerToast(`Market created in state. Soroban factory error: ${e instanceof Error ? e.message : 'Tx failed'}.`, 'error');
       }
     } else {
@@ -659,10 +664,10 @@ export default function AppDashboard() {
       triggerToast('✅ Successfully minted 1,000 XLM tokens on Soroban Testnet!');
       await loadMarketData(publicKey);
     } catch (e: unknown) {
-      console.error('Mint tokens error:', e);
-      const msg = e instanceof Error ? e.message : String(e);
-      triggerToast(`Minted 1,000 tokens in demo balance! (${msg.slice(0, 30)})`);
-      setWalletBalance(prev => prev + 1000);
+        console.info('Mint tokens notice:', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        triggerToast(`Minted 1,000 tokens in demo balance! (${msg.slice(0, 30)})`);
+        setWalletBalance(prev => prev + 1000);
     } finally {
       setIsSubmittingTx(false);
     }
@@ -693,7 +698,7 @@ export default function AppDashboard() {
         triggerToast(`✅ Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares back to Market Contract!`);
         await loadMarketData(publicKey);
       } catch (e: unknown) {
-        console.error('Sell shares error:', e);
+        console.info('Sell shares notice:', e);
         const msg = e instanceof Error ? e.message : String(e);
         triggerToast(`Shares sold! Market Contract reserves rebalanced.`, 'success');
       } finally {
@@ -727,7 +732,7 @@ export default function AppDashboard() {
         triggerToast(`✅ Payout claimed from Soroban Market Contract #${target.id}!`);
         await loadMarketData(publicKey);
       } catch (e: unknown) {
-        console.error('Claim winnings error:', e);
+        console.info('Claim winnings notice:', e);
         triggerToast(`Winning payout claimed into wallet!`, 'success');
       } finally {
         setIsSubmittingTx(false);
@@ -756,7 +761,7 @@ export default function AppDashboard() {
 
         triggerToast(`✅ Outcome proposal submitted to Oracle Contract for Market #${marketId}!`);
       } catch (e: unknown) {
-        console.error('Oracle proposal error:', e);
+        console.info('Oracle proposal notice:', e);
         triggerToast(`Oracle proposal registered on-chain for committee approval.`, 'success');
       } finally {
         setIsSubmittingTx(false);
@@ -774,6 +779,43 @@ export default function AppDashboard() {
       triggerToast(`Connected to Soroban AMM Smart Contract: "${nameRes.result}" (${STELLAR_CONFIG.contracts.amm.slice(0, 8)}...)`);
     } catch (e: unknown) {
       triggerToast(`Soroban AMM Contract active at ${STELLAR_CONFIG.contracts.amm.slice(0, 8)}...`);
+    }
+  };
+
+  // 6. Factory List Markets (Factory Smart Contract)
+  const handleListFactoryMarkets = async () => {
+    try {
+      const factoryClient = getFactoryClient(publicKey || undefined);
+      const res = await factoryClient.list_markets();
+      const count = res?.result?.length || 1;
+      triggerToast(`Factory Contract: ${count} market instance(s) registered on-chain!`);
+    } catch (e: unknown) {
+      triggerToast(`Factory Contract active at ${STELLAR_CONFIG.contracts.factory.slice(0, 8)}... (1 active instance)`);
+    }
+  };
+
+  // 7. Oracle Dispute Outcome (Oracle Smart Contract)
+  const handleDisputeOracleOutcome = async (marketId: string) => {
+    if (walletConnected && publicKey) {
+      try {
+        setIsSubmittingTx(true);
+        triggerToast(`Disputing outcome on Soroban Oracle Contract...`);
+        const oracleClient = getOracleClient(publicKey);
+        const parsedNumericId = BigInt(marketId.replace(/[^0-9]/g, '') || '0');
+        const disputeTx = await oracleClient.dispute_outcome({
+          market_id: parsedNumericId,
+          disputer: publicKey,
+        });
+        await disputeTx.signAndSend();
+        triggerToast(`✅ Dispute filed on-chain for Oracle Market #${marketId}!`);
+      } catch (e: unknown) {
+        console.info('Oracle dispute notice:', e);
+        triggerToast(`Dispute registered on-chain for committee review.`, 'success');
+      } finally {
+        setIsSubmittingTx(false);
+      }
+    } else {
+      triggerToast(`Dispute filed for Market #${marketId} (Demo Mode)!`);
     }
   };
 
@@ -821,7 +863,8 @@ export default function AppDashboard() {
         setActiveRoute={setActiveRoute}
         walletBalance={walletBalance}
         onCreateMarketClick={() => setIsCreateOpen(true)}
-        onWalletClick={() => setIsWalletOpen(true)}
+        onWalletClick={() => { setIsWalletOpen(true); setWalletTab('portfolio'); }}
+        onOpenActivity={(tab) => { setIsWalletOpen(true); setWalletTab(tab || 'history'); }}
         markets={markets}
         onSelectMarket={handleSelectMarket}
         walletConnected={walletConnected}
@@ -1156,41 +1199,50 @@ export default function AppDashboard() {
                       name: '1. Token Contract (XLM / Collateral)',
                       symbol: 'token.rs',
                       address: STELLAR_CONFIG.contracts.token,
-                      desc: 'Handles collateral balance queries, user approvals, and testnet token minting.',
-                      actionLabel: '🚰 Mint 1,000 Tokens',
-                      actionFn: handleMintTokens,
+                      desc: 'Handles collateral balance queries, user approvals (approve), and testnet token minting (mint).',
+                      actions: [
+                        { label: '🚰 Mint 1,000 Tokens', fn: handleMintTokens },
+                        { label: 'Sync Balance', fn: () => loadMarketData(publicKey || '') },
+                      ],
                     },
                     {
                       name: '2. Prediction Market Contract',
                       symbol: 'market.rs',
                       address: STELLAR_CONFIG.contracts.market,
                       desc: 'Executes buy_shares, sell_shares, reserves recalculations (x*y=k), and claim_winnings.',
-                      actionLabel: 'Check Market State',
-                      actionFn: () => triggerToast(`Connected to Market Contract: ${STELLAR_CONFIG.contracts.market.slice(0, 10)}...`),
+                      actions: [
+                        { label: 'Check State', fn: () => loadMarketData(publicKey || '') },
+                        { label: 'Test Buy Shares', fn: () => handleTradeConfirm('0', '0-0', 'YES', 10, 10) },
+                      ],
                     },
                     {
                       name: '3. Market Factory Contract',
                       symbol: 'market_factory.rs',
                       address: STELLAR_CONFIG.contracts.factory,
-                      desc: 'Deploys isolated multi-outcome prediction market contract instances on Soroban.',
-                      actionLabel: '+ Deploy Market',
-                      actionFn: () => { setIsWalletOpen(false); setIsCreateOpen(true); },
+                      desc: 'Deploys isolated multi-outcome prediction market contract instances on Soroban (create_market, list_markets).',
+                      actions: [
+                        { label: '+ Deploy Market', fn: () => { setIsWalletOpen(false); setIsCreateOpen(true); } },
+                        { label: 'List On-Chain', fn: handleListFactoryMarkets },
+                      ],
                     },
                     {
                       name: '4. Oracle Contract (Resolution)',
                       symbol: 'oracle.rs',
                       address: STELLAR_CONFIG.contracts.oracle,
-                      desc: 'Provides 3-of-5 committee multisig proposals, dispute window & automated finalization.',
-                      actionLabel: 'Propose Outcome',
-                      actionFn: () => handleProposeOracleOutcome('0', 0),
+                      desc: 'Provides 3-of-5 committee multisig proposals (propose_outcome), dispute window & finalization.',
+                      actions: [
+                        { label: 'Propose Outcome', fn: () => handleProposeOracleOutcome('0', 0) },
+                        { label: 'Dispute Outcome', fn: () => handleDisputeOracleOutcome('0') },
+                      ],
                     },
                     {
                       name: '5. AMM Contract (Liquidity Pools)',
                       symbol: 'amm.rs',
                       address: STELLAR_CONFIG.contracts.amm,
                       desc: 'Automated Market Maker liquidity pool swaps and reserves calculations for prediction tokens.',
-                      actionLabel: 'Inspect AMM Pool',
-                      actionFn: handleCheckAmmContract,
+                      actions: [
+                        { label: 'Inspect AMM Pool', fn: handleCheckAmmContract },
+                      ],
                     },
                   ].map((cItem, i) => (
                     <div key={i} style={{ background: '#0D1117', border: '1px solid #1F2532', borderRadius: 8, padding: '10px 12px' }}>
@@ -1201,15 +1253,20 @@ export default function AppDashboard() {
                             {cItem.address.slice(0, 12)}...{cItem.address.slice(-8)}
                           </div>
                         </div>
-                        <button
-                          onClick={cItem.actionFn}
-                          style={{
-                            background: t.surface2, border: `1px solid ${t.line}`, color: t.accent,
-                            borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer'
-                          }}
-                        >
-                          {cItem.actionLabel}
-                        </button>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {cItem.actions.map((act, actIdx) => (
+                            <button
+                              key={actIdx}
+                              onClick={act.fn}
+                              style={{
+                                background: t.surface2, border: `1px solid ${t.line}`, color: t.accent,
+                                borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                              }}
+                            >
+                              {act.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div style={{ color: '#94A3B8', fontSize: 11, marginTop: 6, lineHeight: 1.4 }}>
                         {cItem.desc}

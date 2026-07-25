@@ -34,3 +34,25 @@ export const isTestnetNetwork = (passphrase?: string | null): boolean => {
 export const getStellarExpertAccountUrl = (publicKey: string): string => {
   return `https://stellar.expert/explorer/testnet/account/${publicKey}`;
 };
+
+/**
+ * Fund account on Stellar Testnet using Friendbot faucet
+ */
+export const fundAccountWithFriendbot = async (
+  publicKey: string
+): Promise<{ success: boolean; message: string }> => {
+  if (!publicKey) return { success: false, message: 'No public key provided' };
+  try {
+    const res = await fetch(`https://friendbot.stellar.org/?addr=${encodeURIComponent(publicKey)}`);
+    if (res.ok) {
+      return { success: true, message: 'Account funded with 10,000 Testnet XLM!' };
+    } else {
+      const data = await res.json().catch(() => ({}));
+      const detail = data?.detail || data?.title || 'Friendbot request failed.';
+      return { success: false, message: detail };
+    }
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Network error reaching Friendbot' };
+  }
+};
+

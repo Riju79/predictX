@@ -4,7 +4,11 @@ import React, { useState } from 'react';
 import { useWallet } from '../useWallet';
 import { WalletDropdown } from './WalletDropdown';
 
-export const ConnectWalletButton: React.FC = () => {
+interface ConnectWalletButtonProps {
+  onOpenActivity?: (tab?: 'portfolio' | 'history' | 'created' | 'contracts') => void;
+}
+
+export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({ onOpenActivity }) => {
   const { isConnected, shortAddress, isLoading, isWrongNetwork, connect } = useWallet();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -109,7 +113,11 @@ export const ConnectWalletButton: React.FC = () => {
         <span style={{ fontSize: 10, color: '#94A3B8' }}>▼</span>
       </button>
 
-      <WalletDropdown isOpen={isDropdownOpen} onClose={() => setIsDropdownOpen(false)} />
+      <WalletDropdown
+        isOpen={isDropdownOpen}
+        onClose={() => setIsDropdownOpen(false)}
+        onOpenActivity={onOpenActivity}
+      />
     </div>
   );
 };

@@ -6,19 +6,22 @@ import { useWallet } from '../useWallet';
 interface WalletDropdownProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenActivity?: (tab?: 'portfolio' | 'history' | 'created' | 'contracts') => void;
 }
 
-export const WalletDropdown: React.FC<WalletDropdownProps> = ({ isOpen, onClose }) => {
+export const WalletDropdown: React.FC<WalletDropdownProps> = ({ isOpen, onClose, onOpenActivity }) => {
   const {
     publicKey,
     shortAddress,
     balance,
     network,
     isWrongNetwork,
+    isFunding = false,
     disconnect,
     refresh,
     copyAddress,
     openStellarExpert,
+    fundAccount,
   } = useWallet();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,7 +49,7 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ isOpen, onClose 
         position: 'absolute',
         top: 'calc(100% + 8px)',
         right: 0,
-        width: 280,
+        width: 290,
         background: '#0F141C',
         border: '1px solid #2B3545',
         borderRadius: 14,
@@ -62,7 +65,7 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ isOpen, onClose 
         style={{
           borderBottom: '1px solid #1E293B',
           paddingBottom: 10,
-          marginBottom: 10,
+          marginBottom: 8,
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -88,6 +91,65 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ isOpen, onClose 
         </div>
         <div style={{ fontSize: 12, color: '#38BDF8', fontWeight: 600, marginTop: 4 }}>
           {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XLM
+        </div>
+      </div>
+
+      {/* Activity & History Section */}
+      <div style={{ borderBottom: '1px solid #1E293B', paddingBottom: 8, marginBottom: 8 }}>
+        <div style={{ fontSize: 10.5, color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+          Wallet Activity & History
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <button
+            onClick={() => {
+              onOpenActivity?.('history');
+              onClose();
+            }}
+            style={{
+              ...menuItemStyle,
+              background: 'rgba(99, 102, 241, 0.08)',
+              color: '#818CF8',
+              border: '1px solid rgba(99, 102, 241, 0.2)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.18)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
+            }}
+          >
+            <span style={{ fontSize: 14 }}>📜</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: 600, fontSize: 12 }}>Trading History</span>
+              <span style={{ fontSize: 9.5, color: '#94A3B8', fontWeight: 400 }}>View all placed bets & orders</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              onOpenActivity?.('created');
+              onClose();
+            }}
+            style={{
+              ...menuItemStyle,
+              background: 'rgba(16, 185, 129, 0.08)',
+              color: '#34D399',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.18)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)';
+            }}
+          >
+            <span style={{ fontSize: 14 }}>🚀</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: 600, fontSize: 12 }}>Created Markets</span>
+              <span style={{ fontSize: 9.5, color: '#94A3B8', fontWeight: 400 }}>Your deployed contract markets</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -117,6 +179,28 @@ export const WalletDropdown: React.FC<WalletDropdownProps> = ({ isOpen, onClose 
         >
           <span style={{ fontSize: 14 }}>🔗</span>
           <span>View on StellarExpert</span>
+        </button>
+
+        <button
+          onClick={() => {
+            fundAccount();
+            onClose();
+          }}
+          disabled={isFunding}
+          style={{
+            ...menuItemStyle,
+            color: '#38BDF8',
+            background: 'rgba(56, 189, 248, 0.08)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(56, 189, 248, 0.18)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(56, 189, 248, 0.08)';
+          }}
+        >
+          <span style={{ fontSize: 14 }}>🎁</span>
+          <span>{isFunding ? 'Funding XLM...' : 'Fund Account (Friendbot)'}</span>
         </button>
 
         <button

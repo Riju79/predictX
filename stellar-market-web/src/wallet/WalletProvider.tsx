@@ -17,6 +17,7 @@ import {
   formatShortAddress,
   isTestnetNetwork,
   getStellarExpertAccountUrl,
+  fundAccountWithFriendbot,
 } from './walletHelpers';
 import { getTokenClient, fromRawAmount } from '@/src/config/stellar';
 
@@ -33,6 +34,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     networkPassphrase: STELLAR_TESTNET_CONFIG.networkPassphrase,
     walletName: 'Freighter Wallet',
     isLoading: false,
+    isFunding: false,
     isFreighterInstalled: false,
     isWrongNetwork: false,
     networkError: null,
@@ -52,7 +54,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const fetchBalances = useCallback(async (pk: string) => {
     if (!pk) return { balance: 0, usdcBalance: 0 };
     try {
-      const tokenClient = getTokenClient(pk);
+      // Omit source account for read simulation so unfunded testnet accounts do not throw 'Account not found'
+      const tokenClient = getTokenClient();
       const balRes = await tokenClient.balance({ id: pk });
       if (balRes && balRes.result !== undefined) {
         const numBal = fromRawAmount(balRes.result as bigint);
@@ -60,11 +63,16 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
           return { balance: numBal, usdcBalance: parseFloat((numBal * 0.12).toFixed(2)) };
         }
       }
-    } catch (e) {
-      console.warn('Error fetching Soroban Testnet balance:', e);
+    } catch (e: any) {
+      if (e?.message?.includes('Account not found')) {
+        console.info(`Account ${pk} is not funded on Testnet yet.`);
+      } else {
+        console.warn('Error fetching Soroban Testnet balance:', e);
+      }
     }
     return { balance: 0, usdcBalance: 0 };
   }, []);
+
 
   // Verify network configuration
   const verifyNetwork = useCallback(async (): Promise<{ isWrong: boolean; errMsg: string | null; netName: string }> => {
@@ -220,6 +228,24 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     window.open(getStellarExpertAccountUrl(state.publicKey), '_blank');
   }, [state.publicKey]);
 
+  // Fund Account via Friendbot Faucet
+  const fundAccount = useCallback(async () => {
+    if (!state.publicKey) {
+      showToast('No wallet connected to fund', 'error');
+      return;
+    }
+    setState(prev => ({ ...prev, isFunding: true }));
+    showToast('⏳ Requesting 10,000 XLM from Stellar Testnet Friendbot...');
+    const res = await fundAccountWithFriendbot(state.publicKey);
+    setState(prev => ({ ...prev, isFunding: false }));
+    if (res.success) {
+      showToast(`✅ ${res.message}`);
+      await refresh();
+    } else {
+      showToast(`❌ ${res.message}`, 'error');
+    }
+  }, [state.publicKey, refresh, showToast]);
+
   // Auto Reconnect on Page Load
   useEffect(() => {
     const initWallet = async () => {
@@ -296,8 +322,10 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         refresh,
         copyAddress,
         openStellarExpert,
+        fundAccount,
       }}
     >
+
       {children}
 
       {/* Toast Notification Banner */}
