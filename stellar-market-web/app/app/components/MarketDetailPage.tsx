@@ -18,6 +18,8 @@ interface MarketDetailPageProps {
     amount: number,
     shares: number
   ) => void;
+  onAddLiquidity?: (marketId: string, amount: number) => Promise<void>;
+  onRemoveLiquidity?: (marketId: string, amount: number) => Promise<void>;
 }
 
 export default function MarketDetailPage({
@@ -27,7 +29,14 @@ export default function MarketDetailPage({
   walletConnected = false,
   onConnectWallet,
   onTradeConfirm,
+  onAddLiquidity,
+  onRemoveLiquidity,
 }: MarketDetailPageProps) {
+  const [isAddLpOpen, setIsAddLpOpen] = useState(false);
+  const [isRemLpOpen, setIsRemLpOpen] = useState(false);
+  const [lpAmountInput, setLpAmountInput] = useState('100');
+  const [userLpBalance, setUserLpBalance] = useState(0);
+  const [userLpSharePct, setUserLpSharePct] = useState(0);
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(
     market.outcomes[0]?.id || ''
   );
@@ -571,6 +580,153 @@ export default function MarketDetailPage({
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Open Liquidity Provisioning & Rewards Section */}
+              <div style={{
+                background: '#0B0F17', border: `1px solid ${t.accent}40`,
+                borderRadius: '14px', marginTop: 16, padding: '20px',
+                boxShadow: '0 8px 32px rgba(56,189,248,0.06)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontFamily: fontDisplay, fontSize: 16, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>💧</span> Open Liquidity Provider Vault
+                    </h3>
+                    <span style={{ fontSize: 12, color: '#8991A3', fontFamily: fontBody }}>
+                      Deposit XLM collateral to earn 50% LP fee rewards on every trade
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => setIsAddLpOpen(true)}
+                      style={{
+                        background: `linear-gradient(135deg, ${t.accent}, #0284C7)`,
+                        border: 'none', color: '#000000', fontWeight: 700,
+                        padding: '8px 16px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
+                        fontFamily: fontBody, boxShadow: '0 2px 10px rgba(56,189,248,0.2)'
+                      }}
+                    >
+                      + Add Liquidity
+                    </button>
+                    <button
+                      onClick={() => setIsRemLpOpen(true)}
+                      style={{
+                        background: '#1E293B', border: `1px solid ${t.line}`, color: '#FFFFFF',
+                        fontWeight: 600, padding: '8px 14px', borderRadius: 8, fontSize: 12,
+                        cursor: 'pointer', fontFamily: fontBody
+                      }}
+                    >
+                      Withdraw LP
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, background: '#07090E', padding: 14, borderRadius: 10, border: `1px solid #1E293B` }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#64748B', fontFamily: fontBody }}>Total Pool Liquidity</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontFamily: fontMono }}>{market.vol} XLM</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#64748B', fontFamily: fontBody }}>Your Pool Share</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: t.accent, fontFamily: fontMono }}>{userLpSharePct}%</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#64748B', fontFamily: fontBody }}>Pending LP Rewards</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: t.up, fontFamily: fontMono }}>+{(userLpBalance * 0.015).toFixed(2)} XLM</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#64748B', fontFamily: fontBody }}>Creator Reward Split</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#F59E0B', fontFamily: fontMono }}>30% Trading Fee</div>
+                  </div>
+                </div>
+
+                {/* Add Liquidity Sub-Modal */}
+                {isAddLpOpen && (
+                  <div style={{
+                    marginTop: 16, background: '#0A0C10', border: `1px solid ${t.accent}60`,
+                    padding: 16, borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 12
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', fontFamily: fontDisplay }}>Deposit XLM Liquidity</span>
+                      <button onClick={() => setIsAddLpOpen(false)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}>✕</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={lpAmountInput}
+                        onChange={e => setLpAmountInput(e.target.value)}
+                        placeholder="Enter XLM amount (e.g. 100)"
+                        style={{
+                          flex: 1, background: '#07090E', border: `1px solid ${t.line}`,
+                          padding: '10px 14px', borderRadius: 8, color: '#FFFFFF',
+                          fontFamily: fontMono, fontSize: 14, outline: 'none'
+                        }}
+                      />
+                      <button
+                        onClick={async () => {
+                          const val = parseFloat(lpAmountInput);
+                          if (val > 0 && onAddLiquidity) {
+                            await onAddLiquidity(market.id, val);
+                            setUserLpBalance(prev => prev + val);
+                            setUserLpSharePct(25);
+                            setIsAddLpOpen(false);
+                          }
+                        }}
+                        style={{
+                          background: t.accent, border: 'none', color: '#000000',
+                          fontWeight: 700, padding: '10px 20px', borderRadius: 8,
+                          fontSize: 13, cursor: 'pointer', fontFamily: fontBody
+                        }}
+                      >
+                        Confirm Deposit
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Remove Liquidity Sub-Modal */}
+                {isRemLpOpen && (
+                  <div style={{
+                    marginTop: 16, background: '#0A0C10', border: `1px solid ${t.down}60`,
+                    padding: 16, borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 12
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', fontFamily: fontDisplay }}>Withdraw XLM Liquidity</span>
+                      <button onClick={() => setIsRemLpOpen(false)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}>✕</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={lpAmountInput}
+                        onChange={e => setLpAmountInput(e.target.value)}
+                        placeholder="Enter XLM withdrawal amount"
+                        style={{
+                          flex: 1, background: '#07090E', border: `1px solid ${t.line}`,
+                          padding: '10px 14px', borderRadius: 8, color: '#FFFFFF',
+                          fontFamily: fontMono, fontSize: 14, outline: 'none'
+                        }}
+                      />
+                      <button
+                        onClick={async () => {
+                          const val = parseFloat(lpAmountInput);
+                          if (val > 0 && onRemoveLiquidity) {
+                            await onRemoveLiquidity(market.id, val);
+                            setUserLpBalance(prev => Math.max(0, prev - val));
+                            setIsRemLpOpen(false);
+                          }
+                        }}
+                        style={{
+                          background: t.down, border: 'none', color: '#FFFFFF',
+                          fontWeight: 700, padding: '10px 20px', borderRadius: 8,
+                          fontSize: 13, cursor: 'pointer', fontFamily: fontBody
+                        }}
+                      >
+                        Confirm Withdrawal
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

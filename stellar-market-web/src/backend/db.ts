@@ -45,6 +45,20 @@ export interface CreatedMarketEntry {
   resolutionTime?: number;
   yesReserves?: number;
   noReserves?: number;
+  totalLiquidity?: number;
+  creatorEarnings?: number;
+}
+
+export interface LPPoolPosition {
+  id: string;
+  userAddress: string;
+  marketId: string;
+  marketTitle: string;
+  amount: number;
+  sharePct: number;
+  pendingRewards: number;
+  claimedRewards: number;
+  updatedAt: string;
 }
 
 export interface MarketComment {
@@ -73,6 +87,7 @@ const STORAGE_KEYS = {
   TRADES: 'px_persistent_trades_v2',
   CREATED_MARKETS: 'px_persistent_created_v2',
   PORTFOLIO: 'px_persistent_portfolio_v2',
+  LP_POSITIONS: 'px_persistent_lp_v2',
 };
 
 class PersistentDatabaseStore {
@@ -80,6 +95,7 @@ class PersistentDatabaseStore {
   private inMemTrades: TradeRecord[] = [];
   private inMemCreatedMarkets: CreatedMarketEntry[] = [];
   private inMemPortfolio: any[] = [];
+  private inMemLPPositions: LPPoolPosition[] = [];
 
   constructor() {
     this.loadFromStorage();
@@ -103,6 +119,9 @@ class PersistentDatabaseStore {
 
       const rawP = localStorage.getItem(STORAGE_KEYS.PORTFOLIO);
       if (rawP) this.inMemPortfolio = JSON.parse(rawP);
+
+      const rawLP = localStorage.getItem(STORAGE_KEYS.LP_POSITIONS);
+      if (rawLP) this.inMemLPPositions = JSON.parse(rawLP);
     } catch (e) {
       console.warn('Failed to load persistent storage:', e);
     }
@@ -173,10 +192,38 @@ class PersistentDatabaseStore {
   public removePortfolioItem(userAddress: string, marketId: string, outcomeId: string) {
     this.loadFromStorage();
     this.inMemPortfolio = this.inMemPortfolio.filter(
-      p => !(p.userAddress?.toLowerCase() === userAddress.toLowerCase() && p.marketId === marketId && p.outcomeId === outcomeId)
+      p => !(p.userAddress?.toLowerCase() === userAddress.toLowerCase() && p.marketId === marketId && (outcomeId === '' || p.outcomeId === outcomeId))
     );
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(this.inMemPortfolio));
+    }
+  }
+
+  // --- Open LP Pool Positions ---
+  public getLPPositions(userAddress?: string, marketId?: string): LPPoolPosition[] {
+    this.loadFromStorage();
+    return this.inMemLPPositions.filter(p => {
+      const matchUser = !userAddress || p.userAddress.toLowerCase() === userAddress.toLowerCase();
+      const matchMarket = !marketId || p.marketId === marketId;
+      return matchUser && matchMarket;
+    });
+  }
+
+  public saveLPPosition(pos: LPPoolPosition) {
+    this.loadFromStorage();
+    this.inMemLPPositions = [pos, ...this.inMemLPPositions.filter(p => p.id !== pos.id)];
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.LP_POSITIONS, JSON.stringify(this.inMemLPPositions));
+    }
+  }
+
+  public removeLPPosition(userAddress: string, marketId: string) {
+    this.loadFromStorage();
+    this.inMemLPPositions = this.inMemLPPositions.filter(
+      p => !(p.userAddress.toLowerCase() === userAddress.toLowerCase() && p.marketId === marketId)
+    );
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.LP_POSITIONS, JSON.stringify(this.inMemLPPositions));
     }
   }
 }

@@ -35,6 +35,7 @@ pub struct MarketState {
     pub yes_reserves: i128,
     pub no_reserves: i128,
     pub total_volume: i128,
+    pub total_liquidity: i128,
     pub protocol_fee_bps: u32,
     pub creator_fee_bps: u32,
 }
@@ -50,6 +51,7 @@ pub enum DataKey {
     UserNoBalance(Address, u64),
     UserOutcomeBalance(Address, u64, u32),
     UserTotalDeposit(Address, u64),
+    UserLP(Address, u64),
 }
 
 #[contract]
@@ -117,7 +119,7 @@ impl Market {
 
         let state = MarketState {
             id: market_id,
-            creator,
+            creator: creator.clone(),
             resolution_time,
             oracle_id,
             status: MarketStatus::Open,
@@ -127,10 +129,13 @@ impl Market {
             yes_reserves: initial_reserve,
             no_reserves: initial_reserve,
             total_volume: 0,
+            total_liquidity: initial_reserve * 2,
             protocol_fee_bps: 100, // 1% protocol fee
             creator_fee_bps: 50,  // 0.5% creator fee
         };
 
+        // Record initial creator seed LP position
+        env.storage().persistent().set(&DataKey::UserLP(creator.clone(), market_id), &(initial_reserve * 2));
         env.storage().persistent().set(&key, &state);
 
         env.events().publish(
@@ -155,7 +160,7 @@ impl Market {
         env.events().publish((symbol_short!("M_Paused"), market_id), paused);
     }
 
-    /// Emergency Cancel market and enable refunds
+    /// Emergency Cancel market with deposit refunds
     pub fn cancel_market(env: Env, market_id: u64) {
         let admin: Address = env.storage().instance().get(&DataKey::Admin)
             .unwrap_or_else(|| panic!("Contract not initialized"));
@@ -171,6 +176,91 @@ impl Market {
         env.events().publish((symbol_short!("M_Cancel"), market_id), ());
     }
 
+    /// Add liquidity to an open market pool
+    pub fn add_liquidity(env: Env, user: Address, market_id: u64, amount: i128) -> i128 {
+        user.require_auth();
+        if amount <= 0 {
+            panic!("Liquidity amount must be positive");
+        }
+
+        let key = DataKey::Market(market_id);
+        let mut state: MarketState = env.storage().persistent().get(&key)
+            .unwrap_or_else(|| panic!("Market does not exist"));
+
+        if state.paused {
+            panic!("Market trading is paused");
+        }
+        if state.status != MarketStatus::Open {
+            panic!("Market is not open");
+        }
+
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
+            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_client = token::Client::new(&env, &token_address);
+        token_client.transfer(&user, &env.current_contract_address(), &amount);
+
+        // Update pool reserves equally for YES and NO pools
+        state.yes_reserves += amount / 2;
+        state.no_reserves += amount / 2;
+        state.total_liquidity += amount;
+        env.storage().persistent().set(&key, &state);
+
+        // Update user LP deposit
+        let lp_key = DataKey::UserLP(user.clone(), market_id);
+        let current_lp: i128 = env.storage().persistent().get(&lp_key).unwrap_or(0);
+        let new_lp = current_lp + amount;
+        env.storage().persistent().set(&lp_key, &new_lp);
+
+        env.events().publish((symbol_short!("LP_Add"), market_id, user), amount);
+
+        new_lp
+    }
+
+    /// Remove liquidity from an open market pool
+    pub fn remove_liquidity(env: Env, user: Address, market_id: u64, amount: i128) -> i128 {
+        user.require_auth();
+        if amount <= 0 {
+            panic!("Liquidity withdrawal amount must be positive");
+        }
+
+        let key = DataKey::Market(market_id);
+        let mut state: MarketState = env.storage().persistent().get(&key)
+            .unwrap_or_else(|| panic!("Market does not exist"));
+
+        let lp_key = DataKey::UserLP(user.clone(), market_id);
+        let current_lp: i128 = env.storage().persistent().get(&lp_key).unwrap_or(0);
+
+        if current_lp < amount {
+            panic!("Insufficient LP balance");
+        }
+
+        if state.yes_reserves < amount / 2 || state.no_reserves < amount / 2 {
+            panic!("Market pool reserves insufficient for full withdrawal");
+        }
+
+        state.yes_reserves -= amount / 2;
+        state.no_reserves -= amount / 2;
+        state.total_liquidity -= amount;
+        env.storage().persistent().set(&key, &state);
+
+        let new_lp = current_lp - amount;
+        env.storage().persistent().set(&lp_key, &new_lp);
+
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
+            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_client = token::Client::new(&env, &token_address);
+        token_client.transfer(&env.current_contract_address(), &user, &amount);
+
+        env.events().publish((symbol_short!("LP_Rem"), market_id, user), amount);
+
+        new_lp
+    }
+
+    /// Read-only getter for user LP deposit
+    pub fn get_user_lp(env: Env, user: Address, market_id: u64) -> i128 {
+        env.storage().persistent().get(&DataKey::UserLP(user, market_id)).unwrap_or(0)
+    }
+
     /// Buy outcome shares using constant-product AMM pricing
     pub fn buy_shares(
         env: Env,
@@ -181,7 +271,7 @@ impl Market {
     ) -> i128 {
         user.require_auth();
         if payment <= 0 {
-            panic!("Payment must be greater than zero");
+            panic!("Payment must be positive");
         }
 
         let key = DataKey::Market(market_id);
@@ -260,7 +350,7 @@ impl Market {
     ) -> i128 {
         user.require_auth();
         if shares <= 0 {
-            panic!("Shares to sell must be greater than zero");
+            panic!("Shares must be positive");
         }
 
         let key = DataKey::Market(market_id);
