@@ -1,6 +1,9 @@
 {
-  "buildCommand": "cd predict-x && npm run build",
-  "outputDirectory": "predict-x/.next",
-  "installCommand": "cd predict-x && npm install",
-  "framework": null
+  "version": 2,
+  "builds": [
+    {
+      "src": "predict-x/package.json",
+      "use": "@vercel/next"
+    }
+  ]
 }
