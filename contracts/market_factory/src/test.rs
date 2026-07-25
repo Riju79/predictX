@@ -18,7 +18,9 @@ fn setup_factory_and_market(env: &Env) -> (MarketFactoryClient<'static>, Address
     let factory_client = MarketFactoryClient::new(env, &factory_id);
 
     // 3. Initialize both
-    market_client.initialize(&token_address, &factory_id);
+    let admin = Address::generate(env);
+    let treasury = Address::generate(env);
+    market_client.initialize(&admin, &token_address, &factory_id, &treasury);
     factory_client.initialize(&market_id);
 
     (factory_client, factory_id)

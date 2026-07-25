@@ -19,12 +19,15 @@ fn test_oracle_lifecycle_multisig() {
     // Set up mock token and initialize market
     let token_admin = Address::generate(&env);
     let token_address = env.register_stellar_asset_contract(token_admin);
-    market_client.initialize(&token_address, &Address::generate(&env));
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    market_client.initialize(&admin, &token_address, &Address::generate(&env), &treasury);
 
     // Create a market instance
     let market_id = 1u64;
     let oracle_id = env.register(Oracle, ()); // Register Oracle contract
-    market_client.create_market(&market_id, &1000, &oracle_id);
+    let creator = Address::generate(&env);
+    market_client.create_market(&creator, &market_id, &1000, &oracle_id);
 
     // 2. Set up Oracle contract
     let oracle_client = OracleClient::new(&env, &oracle_id);
@@ -113,11 +116,14 @@ fn test_oracle_finalize_fails_before_window_or_approvals() {
     let market_client = market_contract::Client::new(&env, &market_contract_id);
     let token_admin = Address::generate(&env);
     let token_address = env.register_stellar_asset_contract(token_admin);
-    market_client.initialize(&token_address, &Address::generate(&env));
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    market_client.initialize(&admin, &token_address, &Address::generate(&env), &treasury);
 
     let market_id = 3u64;
     let oracle_id = env.register(Oracle, ());
-    market_client.create_market(&market_id, &2000, &oracle_id);
+    let creator = Address::generate(&env);
+    market_client.create_market(&creator, &market_id, &2000, &oracle_id);
 
     let oracle_client = OracleClient::new(&env, &oracle_id);
     let committee = vec![
@@ -151,11 +157,14 @@ fn test_oracle_disputed_path() {
     let market_client = market_contract::Client::new(&env, &market_contract_id);
     let token_admin = Address::generate(&env);
     let token_address = env.register_stellar_asset_contract(token_admin);
-    market_client.initialize(&token_address, &Address::generate(&env));
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    market_client.initialize(&admin, &token_address, &Address::generate(&env), &treasury);
 
     let market_id = 4u64;
     let oracle_id = env.register(Oracle, ());
-    market_client.create_market(&market_id, &2000, &oracle_id);
+    let creator = Address::generate(&env);
+    market_client.create_market(&creator, &market_id, &2000, &oracle_id);
 
     let oracle_client = OracleClient::new(&env, &oracle_id);
     let committee = vec![
