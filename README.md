@@ -264,7 +264,7 @@ git clone https://github.com/your-username/predict-x.git
 cd predict-x
 
 # Install frontend dependencies
-cd stellar-market-web
+cd predict-x
 npm install
 
 # Build Soroban contracts
@@ -275,7 +275,7 @@ cargo build --target wasm32-unknown-unknown --release
 ### Run Development Server
 
 ```bash
-cd stellar-market-web
+cd predict-x
 npm run dev
 ```
 
@@ -284,7 +284,7 @@ Open [http://localhost:3000/app](http://localhost:3000/app)
 ### Build for Production
 
 ```bash
-cd stellar-market-web
+cd predict-x
 npm run build
 npm start
 ```
@@ -293,7 +293,7 @@ npm start
 
 ## 🔐 Environment Variables
 
-Create `stellar-market-web/.env.local`:
+Create `predict-x/.env.local`:
 
 ```env
 # Stellar Network
@@ -359,13 +359,13 @@ stellar contract invoke \
 stellar contract bindings typescript \
   --contract-id <MARKET_CONTRACT_ID> \
   --network testnet \
-  --output-dir stellar-market-web/src/bindings/market
+  --output-dir predict-x/src/bindings/market
 
 # Generate client bindings for Factory contract
 stellar contract bindings typescript \
   --contract-id <FACTORY_CONTRACT_ID> \
   --network testnet \
-  --output-dir stellar-market-web/src/bindings/market_factory
+  --output-dir predict-x/src/bindings/market_factory
 ```
 
 ---
@@ -440,7 +440,7 @@ predict-x/
 │   ├── market_factory/    # Market deployment factory (Rust)
 │   ├── amm/               # Standalone AMM module (Rust)
 │   └── oracle/            # Oracle resolution contract (Rust)
-├── stellar-market-web/    # Next.js 16 frontend
+├── predict-x/    # Next.js 16 frontend
 │   ├── app/
 │   │   ├── app/           # Main dashboard & page
 │   │   │   └── components/  # TradingDrawer, SellSharesModal, etc.

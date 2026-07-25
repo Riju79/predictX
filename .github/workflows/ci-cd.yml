@@ -64,14 +64,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-          cache-dependency-path: 'stellar-market-web/package-lock.json'
+          cache-dependency-path: 'predict-x/package-lock.json'
 
       - name: Install npm dependencies
-        working-directory: stellar-market-web
-        run: npm ci
+        working-directory: predict-x
 
       - name: Build Next.js Web Application
-        working-directory: stellar-market-web
+        working-directory: predict-x
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
