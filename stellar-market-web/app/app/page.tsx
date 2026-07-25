@@ -436,7 +436,7 @@ export default function AppDashboard() {
   const wallet = useWallet();
   const walletConnected = wallet.isConnected;
   const publicKey = wallet.publicKey;
-  const activeBalance = walletConnected ? wallet.balance : walletBalance;
+  const activeBalance = walletConnected ? (wallet.balance || walletBalance) : walletBalance;
   const connectWallet = wallet.connect;
   const disconnectWallet = wallet.disconnect;
   const [walletError, setWalletError] = useState('');
@@ -496,16 +496,20 @@ export default function AppDashboard() {
       if (userPort && userPort.length > 0) {
         setPortfolio(userPort);
       }
-      if (wallet.balance && wallet.balance > 0) {
-        setWalletBalance(wallet.balance);
-      }
       loadMarketData(publicKey);
     } else {
       setTradeHistory([]);
       setCreatedMarkets([]);
       setPortfolio([]);
     }
-  }, [walletConnected, publicKey, wallet.balance]);
+  }, [walletConnected, publicKey]);
+
+  // Dedicated balance sync effect
+  useEffect(() => {
+    if (walletConnected && wallet.balance && wallet.balance > 0) {
+      setWalletBalance(wallet.balance);
+    }
+  }, [walletConnected, wallet.balance]);
 
 
 
@@ -1086,7 +1090,7 @@ export default function AppDashboard() {
       <DashboardNavbar
         activeRoute={activeRoute}
         setActiveRoute={setActiveRoute}
-        walletBalance={walletBalance}
+        walletBalance={activeBalance}
         onCreateMarketClick={() => setIsCreateOpen(true)}
         onWalletClick={() => { setIsWalletOpen(true); setWalletTab('portfolio'); }}
         onOpenActivity={(tab) => { setIsWalletOpen(true); setWalletTab(tab || 'history'); }}
@@ -1134,7 +1138,7 @@ export default function AppDashboard() {
           <MarketDetailPage
             market={selectedMarket}
             onBack={() => setActiveRoute('markets')}
-            walletBalance={walletBalance}
+            walletBalance={activeBalance}
             walletConnected={walletConnected}
             onConnectWallet={connectWallet}
             onTradeConfirm={handleTradeConfirm}
@@ -1145,7 +1149,7 @@ export default function AppDashboard() {
 
         {activeRoute === 'perps' && (
           <PerpsTerminal
-            walletBalance={walletBalance}
+            walletBalance={activeBalance}
             walletConnected={walletConnected}
             onConnectWallet={connectWallet}
             positions={perpPositions}
