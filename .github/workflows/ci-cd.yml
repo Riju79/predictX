@@ -34,11 +34,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Run Cargo Workspace Tests
-        run: cargo test --workspace
-
       - name: Build Soroban WASM Contracts (wasm32v1-none)
         run: cargo build --target wasm32v1-none --release --workspace
+
+      - name: Run Cargo Workspace Tests
+        run: cargo test --workspace
 
   # ── JOB 2: Build Next.js Frontend App ──
   web-ci:
