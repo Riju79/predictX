@@ -67,7 +67,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       if (e?.message?.includes('Account not found')) {
         console.info(`Account ${pk} is not funded on Testnet yet.`);
       } else {
-        console.warn('Error fetching Soroban Testnet balance:', e);
+        console.info('Soroban RPC fetch notice:', e?.message || e);
       }
     }
     return { balance: 0, usdcBalance: 0 };

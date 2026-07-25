@@ -453,7 +453,7 @@ export default function AppDashboard() {
       }
     } catch (e: any) {
       if (!e?.message?.includes('Account not found')) {
-        console.warn('Error fetching Soroban testnet token balance:', e);
+        console.info('Soroban RPC token fetch notice:', e?.message || e);
       }
     }
   };

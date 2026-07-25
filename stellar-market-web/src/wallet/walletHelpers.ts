@@ -43,12 +43,15 @@ export const fundAccountWithFriendbot = async (
 ): Promise<{ success: boolean; message: string }> => {
   if (!publicKey) return { success: false, message: 'No public key provided' };
   try {
-    const res = await fetch(`https://friendbot.stellar.org/?addr=${encodeURIComponent(publicKey)}`);
-    if (res.ok) {
+    const res = await fetch(`https://friendbot.stellar.org/?addr=${encodeURIComponent(publicKey)}`).catch(err => {
+      console.info('Friendbot fetch network notice:', err?.message || err);
+      return null;
+    });
+    if (res && res.ok) {
       return { success: true, message: 'Account funded with 10,000 Testnet XLM!' };
     } else {
-      const data = await res.json().catch(() => ({}));
-      const detail = data?.detail || data?.title || 'Friendbot request failed.';
+      const data = res ? await res.json().catch(() => ({})) : {};
+      const detail = data?.detail || data?.title || 'Friendbot request failed or offline.';
       return { success: false, message: detail };
     }
   } catch (err: any) {
