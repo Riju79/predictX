@@ -48,15 +48,22 @@ export const getExpirationLedger = async (): Promise<number> => {
   }
 };
 
+const safeSignTransaction = (publicKey?: string) => {
+  if (!publicKey) return undefined;
+  return async (xdr: string) => {
+    const res = await signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase });
+    if (typeof res === 'string') return res;
+    return (res as any)?.signedTxXdr || (res as any)?.signedXdr || (res as any)?.xdr || xdr;
+  };
+};
+
 export const getMarketClient = (publicKey?: string) =>
   new MarketClient({
     contractId: STELLAR_CONFIG.contracts.market,
     rpcUrl: STELLAR_CONFIG.rpcUrl,
     networkPassphrase: STELLAR_CONFIG.networkPassphrase,
     publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase })
-      : undefined,
+    signTransaction: safeSignTransaction(publicKey),
   });
 
 export const getTokenClient = (publicKey?: string) =>
@@ -65,9 +72,7 @@ export const getTokenClient = (publicKey?: string) =>
     rpcUrl: STELLAR_CONFIG.rpcUrl,
     networkPassphrase: STELLAR_CONFIG.networkPassphrase,
     publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase })
-      : undefined,
+    signTransaction: safeSignTransaction(publicKey),
   });
 
 export const getOracleClient = (publicKey?: string) =>
@@ -76,9 +81,7 @@ export const getOracleClient = (publicKey?: string) =>
     rpcUrl: STELLAR_CONFIG.rpcUrl,
     networkPassphrase: STELLAR_CONFIG.networkPassphrase,
     publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase })
-      : undefined,
+    signTransaction: safeSignTransaction(publicKey),
   });
 
 export const getFactoryClient = (publicKey?: string) =>
@@ -87,9 +90,7 @@ export const getFactoryClient = (publicKey?: string) =>
     rpcUrl: STELLAR_CONFIG.rpcUrl,
     networkPassphrase: STELLAR_CONFIG.networkPassphrase,
     publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase })
-      : undefined,
+    signTransaction: safeSignTransaction(publicKey),
   });
 
 export const getAmmClient = (publicKey?: string) =>
@@ -98,7 +99,5 @@ export const getAmmClient = (publicKey?: string) =>
     rpcUrl: STELLAR_CONFIG.rpcUrl,
     networkPassphrase: STELLAR_CONFIG.networkPassphrase,
     publicKey,
-    signTransaction: publicKey
-      ? (xdr: string) => signTransaction(xdr, { networkPassphrase: STELLAR_CONFIG.networkPassphrase })
-      : undefined,
+    signTransaction: safeSignTransaction(publicKey),
   });
