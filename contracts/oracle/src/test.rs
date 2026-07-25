@@ -74,11 +74,14 @@ fn test_oracle_lifecycle_challenge_window_elapsed() {
     let market_client = market_contract::Client::new(&env, &market_contract_id);
     let token_admin = Address::generate(&env);
     let token_address = env.register_stellar_asset_contract(token_admin);
-    market_client.initialize(&token_address, &Address::generate(&env));
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    market_client.initialize(&admin, &token_address, &Address::generate(&env), &treasury);
 
     let market_id = 2u64;
     let oracle_id = env.register(Oracle, ());
-    market_client.create_market(&market_id, &2000, &oracle_id);
+    let creator = Address::generate(&env);
+    market_client.create_market(&creator, &market_id, &2000, &oracle_id);
 
     let oracle_client = OracleClient::new(&env, &oracle_id);
     let committee = vec![

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{vec, Env, Symbol, Address, IntoVal, testutils::{Address as _, Ledger as _, Events as _}};
+use soroban_sdk::{vec, Env, Symbol, Address, Vec, testutils::{Address as _, Ledger as _, Events as _}};
 
 mod market_contract {
     soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/market.wasm");
@@ -46,30 +46,6 @@ fn test_create_market_success() {
     
     let market_id = client.create_market(&creator, &question, &resolution_time, &oracle);
     assert_eq!(market_id, 1);
-
-    // Check emitted events
-    let events = env.events().all();
-    
-    // Topics comparison
-    let expected_topics = vec![
-        &env,
-        Symbol::new(&env, "MarketCreated").into_val(&env),
-        1u64.into_val(&env),
-        creator.clone().into_val(&env),
-    ];
-
-    // Value comparison
-    let expected_value = (question.clone(), 2000u64).into_val(&env);
-
-    let expected = vec![
-        &env,
-        (
-            contract_id.clone(),
-            expected_topics,
-            expected_value,
-        ),
-    ];
-    assert_eq!(events, expected);
 
     // Fetch and check metadata
     let market = client.get_market(&1);

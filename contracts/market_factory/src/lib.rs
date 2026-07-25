@@ -23,7 +23,7 @@ pub enum DataKey {
 
 #[contractclient(name = "MarketClient")]
 pub trait MarketInterface {
-    fn create_market(env: Env, market_id: u64, resolution_time: u64, oracle_id: Address);
+    fn create_market(env: Env, creator: Address, market_id: u64, resolution_time: u64, oracle_id: Address);
 }
 
 #[contract]
@@ -88,7 +88,7 @@ impl MarketFactory {
         let market_contract: Address = env.storage().instance().get(&DataKey::MarketContract)
             .unwrap_or_else(|| panic!("Contract not initialized"));
         let market_client = MarketClient::new(&env, &market_contract);
-        market_client.create_market(&market_id, &resolution_time, &oracle_id);
+        market_client.create_market(&creator, &market_id, &resolution_time, &oracle_id);
 
         // Emit MarketCreated event
         env.events().publish(

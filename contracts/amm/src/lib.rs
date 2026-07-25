@@ -130,7 +130,7 @@ mod test {
         let p_yes = AMM::calculate_price(env.clone(), 1000, 1000, true);
         assert_eq!(p_yes, 5000); // 50%
 
-        let (shares, fee, impact) = AMM::calculate_buy(env.clone(), 1000, 1000, 100, true, 30);
+        let (shares, fee, impact) = AMM::calculate_buy(env.clone(), 1000, 1000, 10_000, true, 30);
         assert!(shares > 0);
         assert!(fee > 0);
     }
