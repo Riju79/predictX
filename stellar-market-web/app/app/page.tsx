@@ -27,6 +27,7 @@ import {
   getFactoryClient, 
   getAmmClient 
 } from '@/src/config/stellar';
+import { db } from '@/src/backend/db';
 
 const MARKET_ID = STELLAR_CONFIG.contracts.market;
 const TOKEN_ID = STELLAR_CONFIG.contracts.token;
@@ -354,6 +355,18 @@ export default function AppDashboard() {
   const [createdMarkets, setCreatedMarkets] = useState<CreatedMarketEntry[]>([]);
   const [walletTab, setWalletTab] = useState<'portfolio' | 'history' | 'created' | 'contracts'>('portfolio');
 
+  // Load persistent custom markets on mount
+  useEffect(() => {
+    const storedCustom = db.getCustomMarkets();
+    if (storedCustom && storedCustom.length > 0) {
+      setMarkets(prev => {
+        const existingMap = new Map(prev.map(m => [m.id, m]));
+        storedCustom.forEach(cm => existingMap.set(cm.id, cm));
+        return Array.from(existingMap.values());
+      });
+    }
+  }, []);
+
   const handleSelectMarket = (m: Market) => {
     setSelectedMarket(m);
     setActiveRoute('market-detail');
@@ -458,6 +471,27 @@ export default function AppDashboard() {
     }
   };
 
+  // Auto Wallet Synchronization Effect across refreshes & reconnects
+  useEffect(() => {
+    if (walletConnected && publicKey) {
+      const userTrades = db.getTrades(publicKey);
+      setTradeHistory(userTrades);
+
+      const userCreated = db.getCreatedMarkets(publicKey);
+      setCreatedMarkets(userCreated);
+
+      const userPort = db.getPortfolio(publicKey);
+      if (userPort && userPort.length > 0) {
+        setPortfolio(userPort);
+      }
+      loadMarketData(publicKey);
+    } else {
+      setTradeHistory([]);
+      setCreatedMarkets([]);
+      setPortfolio([]);
+    }
+  }, [walletConnected, publicKey]);
+
 
 
   // Prediction Trade confirmations (with Soroban Smart Contract Execution)
@@ -521,19 +555,45 @@ export default function AppDashboard() {
 
     setWalletBalance(prev => Math.max(0, prev - amount));
 
-    // Record trade history entry
-    setTradeHistory(prev => [
-      {
-        id: `trade-${Date.now()}`,
+    const tradeEntry = {
+      id: `trade-${Date.now()}`,
+      marketTitle: target.title,
+      outcomeName,
+      amount,
+      shares,
+      currency,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    };
+
+    if (publicKey) {
+      db.saveTrade({
+        id: tradeEntry.id,
+        userAddress: publicKey,
+        marketId,
         marketTitle: target.title,
+        outcomeId,
         outcomeName,
         amount,
         shares,
         currency,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      },
-      ...prev
-    ]);
+        timestamp: tradeEntry.timestamp,
+      });
+
+      db.savePortfolioItem({
+        id: `port-${marketId}-${outcomeId}`,
+        userAddress: publicKey,
+        marketId,
+        marketTitle: target.title,
+        outcomeId,
+        outcomeName,
+        shares,
+        avgPrice: amount / shares,
+        cost: amount,
+      });
+    }
+
+    // Record trade history entry
+    setTradeHistory(prev => [tradeEntry, ...prev]);
 
     setPortfolio(prev => {
       const idx = prev.findIndex(p => p.marketId === marketId && p.outcomeId === outcomeId);
@@ -569,7 +629,9 @@ export default function AppDashboard() {
         newProbs = newProbs.map(p => parseFloat(((p / sum) * 100).toFixed(1)));
 
         const updatedOutcomes = m.outcomes.map((o, i) => ({ ...o, probability: newProbs[i] }));
-        return { ...m, outcomes: updatedOutcomes };
+        const updatedM = { ...m, outcomes: updatedOutcomes };
+        db.saveCustomMarket(updatedM);
+        return updatedM;
       }
       return m;
     }));
@@ -606,6 +668,10 @@ export default function AppDashboard() {
           createdMarketId = `soroban-${res.result.toString()}`;
         }
         triggerToast(`✅ Deployed Soroban Market Contract on Testnet (ID: ${createdMarketId})!`);
+        await loadMarketData(publicKey);
+        if (typeof wallet.refresh === 'function') {
+          await wallet.refresh();
+        }
       } catch (e: unknown) {
         console.info('Soroban market factory notice:', e);
         triggerToast(`Market created in state. Soroban factory error: ${e instanceof Error ? e.message : 'Tx failed'}.`, 'error');
@@ -626,21 +692,30 @@ export default function AppDashboard() {
       history: generateInitialHistory(newM.outcomes),
     };
 
+    // Save custom market permanently
+    db.saveCustomMarket(createdMarket);
+
     setMarkets(prev => [createdMarket, ...prev]);
 
+    const createdEntry: CreatedMarketEntry = {
+      id: createdMarket.id,
+      title: newM.title,
+      category: newM.category,
+      ic: newM.ic,
+      outcomesCount: newM.outcomes.length,
+      vol: newM.vol,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    if (publicKey) {
+      db.saveCreatedMarket({
+        ...createdEntry,
+        creatorAddress: publicKey,
+      });
+    }
+
     // Record created market entry
-    setCreatedMarkets(prev => [
-      {
-        id: createdMarket.id,
-        title: newM.title,
-        category: newM.category,
-        ic: newM.ic,
-        outcomesCount: newM.outcomes.length,
-        vol: newM.vol,
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-      ...prev
-    ]);
+    setCreatedMarkets(prev => [createdEntry, ...prev]);
   };
 
   // ── Smart Contract Relations & Execution Handlers ──
@@ -696,18 +771,24 @@ export default function AppDashboard() {
         await sellTx.signAndSend();
 
         triggerToast(`✅ Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares back to Market Contract!`);
-        await loadMarketData(publicKey);
       } catch (e: unknown) {
         console.info('Sell shares notice:', e);
         const msg = e instanceof Error ? e.message : String(e);
         triggerToast(`Shares sold! Market Contract reserves rebalanced.`, 'success');
       } finally {
         setIsSubmittingTx(false);
+        await loadMarketData(publicKey);
+        if (typeof wallet.refresh === 'function') {
+          await wallet.refresh();
+        }
       }
     } else {
       triggerToast(`Sold ${sharesCount.toFixed(1)} "${outcomeName}" shares (Demo Mode)!`);
     }
 
+    if (publicKey) {
+      db.removePortfolioItem(publicKey, marketId, outcomeId);
+    }
     setPortfolio(prev => prev.filter(p => !(p.marketId === marketId && p.outcomeId === outcomeId)));
   };
 
@@ -730,16 +811,24 @@ export default function AppDashboard() {
         await claimTx.signAndSend();
 
         triggerToast(`✅ Payout claimed from Soroban Market Contract #${target.id}!`);
-        await loadMarketData(publicKey);
       } catch (e: unknown) {
         console.info('Claim winnings notice:', e);
         triggerToast(`Winning payout claimed into wallet!`, 'success');
       } finally {
         setIsSubmittingTx(false);
+        await loadMarketData(publicKey);
+        if (typeof wallet.refresh === 'function') {
+          await wallet.refresh();
+        }
       }
     } else {
       triggerToast(`Claimed winning payout (Demo Mode)!`);
     }
+
+    if (publicKey) {
+      db.removePortfolioItem(publicKey, marketId, '');
+    }
+    setPortfolio(prev => prev.filter(p => p.marketId !== marketId));
   };
 
   // 4. Propose outcome via Oracle (Oracle Smart Contract)
@@ -940,7 +1029,7 @@ export default function AppDashboard() {
       <CreateMarketModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        walletBalance={walletBalance}
+        walletBalance={activeBalance}
         currency={currency}
         walletConnected={walletConnected}
         onCreateConfirm={handleCreateConfirm}

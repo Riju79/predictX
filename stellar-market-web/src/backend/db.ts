@@ -1,6 +1,6 @@
 /**
- * PredictX Production Relational Database & In-Memory Indexer Cache
- * Tables: Users, Wallets, Markets, Trades, Liquidity, Claims, Comments, Notifications, AuditLogs, PriceHistory
+ * PredictX Persistent Storage & Blockchain Event Indexer Storage
+ * Survives page refreshes, browser restarts, and wallet reconnections.
  */
 
 export interface UserProfile {
@@ -33,6 +33,20 @@ export interface TradeRecord {
   txHash?: string;
 }
 
+export interface CreatedMarketEntry {
+  id: string;
+  creatorAddress: string;
+  title: string;
+  category: string;
+  ic: string;
+  outcomesCount: number;
+  vol: string;
+  createdAt: string;
+  resolutionTime?: number;
+  yesReserves?: number;
+  noReserves?: number;
+}
+
 export interface MarketComment {
   id: string;
   marketId: string;
@@ -54,95 +68,117 @@ export interface SystemNotification {
   read: boolean;
 }
 
-export interface PricePoint {
-  timestamp: string;
-  price: number;
-  volume: number;
-}
+const STORAGE_KEYS = {
+  MARKETS: 'px_persistent_markets_v2',
+  TRADES: 'px_persistent_trades_v2',
+  CREATED_MARKETS: 'px_persistent_created_v2',
+  PORTFOLIO: 'px_persistent_portfolio_v2',
+};
 
-// In-Memory Indexer Storage for high-speed API response
-class DatabaseStore {
-  private users: Map<string, UserProfile> = new Map();
-  private trades: TradeRecord[] = [];
-  private comments: MarketComment[] = [];
-  private notifications: SystemNotification[] = [];
-  private priceHistory: Map<string, PricePoint[]> = new Map();
+class PersistentDatabaseStore {
+  private inMemMarkets: any[] = [];
+  private inMemTrades: TradeRecord[] = [];
+  private inMemCreatedMarkets: CreatedMarketEntry[] = [];
+  private inMemPortfolio: any[] = [];
 
   constructor() {
-    // Seed initial system data
-    this.seedDefaults();
+    this.loadFromStorage();
   }
 
-  private seedDefaults() {
-    const demoUser: UserProfile = {
-      id: 'usr-1',
-      address: 'GCOXJ25OFSYXB7K6NMMDXCPJMNCR6KRFCZUKMJDBQIMMSDZJLPBYD3UK',
-      username: 'Satoshi_Stellar',
-      avatar: '🚀',
-      bio: 'Quantitative Soroban prediction trader & market maker.',
-      followersCount: 142,
-      followingCount: 38,
-      joinedDate: 'Jan 2026',
-      totalVolume: 45200,
-      totalProfit: 8450,
-      roi: 18.7,
-      winRate: 74.2,
-      badges: ['Whale Trader', 'Early Supporter', 'Soroban Builder', 'Top Predictor'],
-    };
-    this.users.set(demoUser.address, demoUser);
+  private isBrowser(): boolean {
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
   }
 
-  public getUser(address: string): UserProfile {
-    if (!this.users.has(address)) {
-      const newUser: UserProfile = {
-        id: `usr-${Date.now()}`,
-        address,
-        username: `Predictor_${address.slice(0, 4)}`,
-        avatar: '🔮',
-        bio: 'Soroban Prediction Trader on Stellar Testnet',
-        followersCount: 0,
-        followingCount: 0,
-        joinedDate: 'Today',
-        totalVolume: 0,
-        totalProfit: 0,
-        roi: 0,
-        winRate: 0,
-        badges: ['Testnet Trader'],
-      };
-      this.users.set(address, newUser);
+  private loadFromStorage() {
+    if (!this.isBrowser()) return;
+    try {
+      const rawM = localStorage.getItem(STORAGE_KEYS.MARKETS);
+      if (rawM) this.inMemMarkets = JSON.parse(rawM);
+
+      const rawT = localStorage.getItem(STORAGE_KEYS.TRADES);
+      if (rawT) this.inMemTrades = JSON.parse(rawT);
+
+      const rawC = localStorage.getItem(STORAGE_KEYS.CREATED_MARKETS);
+      if (rawC) this.inMemCreatedMarkets = JSON.parse(rawC);
+
+      const rawP = localStorage.getItem(STORAGE_KEYS.PORTFOLIO);
+      if (rawP) this.inMemPortfolio = JSON.parse(rawP);
+    } catch (e) {
+      console.warn('Failed to load persistent storage:', e);
     }
-    return this.users.get(address)!;
   }
 
-  public addTrade(trade: TradeRecord) {
-    this.trades.unshift(trade);
-    // Update user stats
-    const u = this.getUser(trade.userAddress);
-    u.totalVolume += trade.amount;
+  // --- Persistent Custom Markets ---
+  public getCustomMarkets(): any[] {
+    this.loadFromStorage();
+    return this.inMemMarkets;
   }
 
+  public saveCustomMarket(market: any) {
+    this.loadFromStorage();
+    this.inMemMarkets = [market, ...this.inMemMarkets.filter(m => m.id !== market.id)];
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.MARKETS, JSON.stringify(this.inMemMarkets));
+    }
+  }
+
+  // --- Persistent Trades ---
   public getTrades(userAddress?: string): TradeRecord[] {
+    this.loadFromStorage();
     if (userAddress) {
-      return this.trades.filter(t => t.userAddress === userAddress);
+      return this.inMemTrades.filter(t => t.userAddress.toLowerCase() === userAddress.toLowerCase());
     }
-    return this.trades;
+    return this.inMemTrades;
   }
 
-  public addComment(comment: MarketComment) {
-    this.comments.unshift(comment);
+  public saveTrade(trade: TradeRecord) {
+    this.loadFromStorage();
+    this.inMemTrades = [trade, ...this.inMemTrades.filter(t => t.id !== trade.id)];
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.TRADES, JSON.stringify(this.inMemTrades));
+    }
   }
 
-  public getComments(marketId: string): MarketComment[] {
-    return this.comments.filter(c => c.marketId === marketId);
+  // --- Persistent Created Markets per Wallet ---
+  public getCreatedMarkets(userAddress?: string): CreatedMarketEntry[] {
+    this.loadFromStorage();
+    if (userAddress) {
+      return this.inMemCreatedMarkets.filter(m => m.creatorAddress.toLowerCase() === userAddress.toLowerCase());
+    }
+    return this.inMemCreatedMarkets;
   }
 
-  public addNotification(notif: SystemNotification) {
-    this.notifications.unshift(notif);
+  public saveCreatedMarket(entry: CreatedMarketEntry) {
+    this.loadFromStorage();
+    this.inMemCreatedMarkets = [entry, ...this.inMemCreatedMarkets.filter(m => m.id !== entry.id)];
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.CREATED_MARKETS, JSON.stringify(this.inMemCreatedMarkets));
+    }
   }
 
-  public getNotifications(userAddress: string): SystemNotification[] {
-    return this.notifications.filter(n => n.userAddress === userAddress);
+  // --- Persistent User Portfolio Positions ---
+  public getPortfolio(userAddress: string): any[] {
+    this.loadFromStorage();
+    return this.inMemPortfolio.filter(p => p.userAddress?.toLowerCase() === userAddress.toLowerCase());
+  }
+
+  public savePortfolioItem(item: any) {
+    this.loadFromStorage();
+    this.inMemPortfolio = [item, ...this.inMemPortfolio.filter(p => p.id !== item.id)];
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(this.inMemPortfolio));
+    }
+  }
+
+  public removePortfolioItem(userAddress: string, marketId: string, outcomeId: string) {
+    this.loadFromStorage();
+    this.inMemPortfolio = this.inMemPortfolio.filter(
+      p => !(p.userAddress?.toLowerCase() === userAddress.toLowerCase() && p.marketId === marketId && p.outcomeId === outcomeId)
+    );
+    if (this.isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.PORTFOLIO, JSON.stringify(this.inMemPortfolio));
+    }
   }
 }
 
-export const db = new DatabaseStore();
+export const db = new PersistentDatabaseStore();

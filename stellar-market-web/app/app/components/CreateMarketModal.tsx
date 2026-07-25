@@ -1,8 +1,7 @@
-'use client';
-
 import { useState } from 'react';
 import { t, fontBody, fontDisplay, fontMono } from '../tokens';
 import { MarketOutcome } from './TradingDrawer';
+import { useWallet } from '@/src/wallet/useWallet';
 
 interface CreateMarketModalProps {
   isOpen: boolean;
@@ -33,6 +32,7 @@ export default function CreateMarketModal({
   walletConnected = false,
   onCreateConfirm,
 }: CreateMarketModalProps) {
+  const { fundAccount, isFunding = false } = useWallet();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Elections');
   const [ic, setIc] = useState('🗳️');
@@ -324,9 +324,14 @@ export default function CreateMarketModal({
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: t.textDim, marginBottom: 6 }}>
-                  Seed Liquidity ({currency})
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: t.textDim }}>
+                    Seed Liquidity ({currency})
+                  </label>
+                  <span style={{ fontSize: 11, color: walletBalance < parseFloat(liquidity || '0') ? '#EF4444' : '#10B981', fontWeight: 600, fontFamily: fontMono }}>
+                    Available: {walletBalance.toFixed(2)} {currency}
+                  </span>
+                </div>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="number"
@@ -336,7 +341,7 @@ export default function CreateMarketModal({
                     onChange={e => setLiquidity(e.target.value)}
                     style={{
                       width: '100%', padding: '10px 12px', borderRadius: 8,
-                      background: t.surface2, border: `1px solid ${t.line}`,
+                      background: t.surface2, border: `1px solid ${walletBalance < parseFloat(liquidity || '0') ? '#EF4444' : t.line}`,
                       color: t.text, fontSize: 13, outline: 'none',
                       fontFamily: fontMono,
                     }}
@@ -346,6 +351,28 @@ export default function CreateMarketModal({
                     color: t.textFaint, fontSize: 11, fontWeight: 700,
                   }}>{currency}</span>
                 </div>
+
+                {walletBalance < parseFloat(liquidity || '0') && (
+                  <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '8px 12px', borderRadius: 8 }}>
+                    <span style={{ fontSize: 11.5, color: '#FCA5A5', fontWeight: 500 }}>
+                      Insufficient XLM balance for seed liquidity.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={fundAccount}
+                      disabled={isFunding}
+                      style={{
+                        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                        color: '#FFFFFF', border: 'none', borderRadius: 6,
+                        padding: '4px 10px', fontSize: 11, fontWeight: 700,
+                        cursor: 'pointer', fontFamily: fontBody,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isFunding ? 'Funding XLM...' : '🎁 Fund 10,000 XLM'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
