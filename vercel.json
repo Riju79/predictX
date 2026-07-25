@@ -1,6 +1,5 @@
 {
-  "buildCommand": "cd predict-x && npm run build",
-  "outputDirectory": "predict-x/.next",
-  "installCommand": "cd predict-x && npm install",
+  "buildCommand": "npm --prefix predict-x run build",
+  "installCommand": "npm --prefix predict-x install",
   "framework": "nextjs"
 }

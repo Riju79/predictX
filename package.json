@@ -1,0 +1,15 @@
+{
+  "name": "predict-x-root",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix predict-x run dev",
+    "build": "npm --prefix predict-x run build",
+    "start": "npm --prefix predict-x run start"
+  },
+  "dependencies": {
+    "next": "^16.2.10",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}
