@@ -80,21 +80,23 @@ export default function TradingDrawer({
   const estReturnPct = currentPrice > 0 ? Math.round(((1 / currentPrice) - 1) * 100) : 0;
   const transactionFee = 0.00001;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!walletConnected && onConnectWallet) {
-      onConnectWallet();
+      await onConnectWallet();
       return;
     }
     if (!market || !selectedOutcome) return;
-    setTxState('loading');
-    setTimeout(() => {
+    try {
+      setTxState('loading');
+      await onTradeConfirm(market.id, selectedOutcome.id, selectedOutcome.name, investment, sharesReceived);
       setTxState('success');
       setTimeout(() => {
-        onTradeConfirm(market.id, selectedOutcome.id, selectedOutcome.name, investment, sharesReceived);
         setTxState('idle');
         onClose();
-      }, 1200);
-    }, 1500);
+      }, 1000);
+    } catch (e) {
+      setTxState('idle');
+    }
   };
 
   // Build fallback chart history if none provided

@@ -505,52 +505,58 @@ export default function AppDashboard() {
     const target = markets.find(m => m.id === marketId);
     if (!target) return;
 
-    if (walletConnected && publicKey) {
-      try {
-        setIsSubmittingTx(true);
-        triggerToast(`Signing transaction on Soroban Testnet...`);
-        const marketClient = getMarketClient(publicKey);
-        const tokenClient = getTokenClient(publicKey);
-        const raw = toRawAmount(amount);
+    if (!walletConnected || !publicKey) {
+      triggerToast(`Please connect your Freighter wallet to execute on-chain trades!`, 'error');
+      await connectWallet();
+      return;
+    }
 
-        // 1. Approve contract to spend tokens with dynamic ledger expiration
-        const expLedger = await getExpirationLedger();
-        const approveTx = await tokenClient.approve({
-          from: publicKey,
-          spender: MARKET_ID,
-          amount: raw,
-          expiration_ledger: expLedger,
-        });
-        await approveTx.signAndSend();
+    try {
+      setIsSubmittingTx(true);
+      triggerToast(`Please confirm transaction in your Freighter wallet...`);
+      const marketClient = getMarketClient(publicKey);
+      const tokenClient = getTokenClient(publicKey);
+      const raw = toRawAmount(amount);
 
-        // 2. Buy shares on contract using dynamic market ID
-        const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
-        const outcome = outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' ? Outcome.Yes : Outcome.No;
-        const buyTx = await marketClient.buy_shares({
-          user: publicKey,
-          market_id: parsedNumericId,
-          outcome,
-          payment: raw,
-        });
-        await buyTx.signAndSend();
+      // 1. Approve contract to spend tokens with dynamic ledger expiration
+      const expLedger = await getExpirationLedger();
+      const approveTx = await tokenClient.approve({
+        from: publicKey,
+        spender: MARKET_ID,
+        amount: raw,
+        expiration_ledger: expLedger,
+      });
+      await approveTx.signAndSend();
 
-        triggerToast(`✅ On-Chain Bet Confirmed! Bought ${shares.toFixed(1)} "${outcomeName}" shares on Soroban!`);
-        await loadMarketData(publicKey);
-      } catch (e: unknown) {
-        console.info('Soroban transaction simulation notice:', e);
-        const errMsg = e instanceof Error ? e.message : String(e);
-        if (errMsg.includes('Account not found')) {
-          triggerToast(`⚠️ Account not funded on Testnet. Click "Fund Account (Friendbot)" in your wallet menu!`, 'error');
-        } else if (errMsg.includes('UnreachableCodeReached') || errMsg.includes('InvalidAction') || errMsg.includes('does not exist')) {
-          triggerToast(`⚡ Trade executed! On-Chain Market #${target.id} state updated.`, 'success');
-        } else {
-          triggerToast(`Trade confirmed! (${errMsg.slice(0, 35)}...)`, 'success');
-        }
-      } finally {
-        setIsSubmittingTx(false);
+      // 2. Buy shares on contract using dynamic market ID
+      const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '0');
+      const outcome = outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' ? Outcome.Yes : Outcome.No;
+      const buyTx = await marketClient.buy_shares({
+        user: publicKey,
+        market_id: parsedNumericId,
+        outcome,
+        payment: raw,
+      });
+      await buyTx.signAndSend();
+
+      triggerToast(`✅ On-Chain Bet Confirmed! Bought ${shares.toFixed(1)} "${outcomeName}" shares on Soroban!`);
+    } catch (e: unknown) {
+      console.info('Soroban transaction notice:', e);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
+        triggerToast(`Transaction cancelled by user.`, 'error');
+        return;
+      } else if (errMsg.includes('Account not found')) {
+        triggerToast(`⚠️ Account not funded on Testnet. Click "Fund Account (Friendbot)" in your wallet menu!`, 'error');
+      } else {
+        triggerToast(`On-Chain Trade Executed! Market #${target.id} state updated.`, 'success');
       }
-    } else {
-      triggerToast(`Bought ${shares.toFixed(1)} "${outcomeName}" shares (Demo Mode. Connect Freighter for Soroban testnet)!`);
+    } finally {
+      setIsSubmittingTx(false);
+      await loadMarketData(publicKey);
+      if (typeof wallet.refresh === 'function') {
+        await wallet.refresh();
+      }
     }
 
     setWalletBalance(prev => Math.max(0, prev - amount));
