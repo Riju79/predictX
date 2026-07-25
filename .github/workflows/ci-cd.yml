@@ -44,7 +44,7 @@ jobs:
 
       - name: Build Soroban WASM Contracts
         run: |
-          cargo build --target wasm32v1-none --release --workspace
+          cargo build --target wasm32-unknown-unknown --release --workspace
 
       - name: Run Cargo Workspace Tests
         run: |
@@ -68,6 +68,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: predict-x
+        run: npm ci
 
       - name: Build Next.js Web Application
         working-directory: predict-x
