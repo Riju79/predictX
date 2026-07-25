@@ -1,0 +1,88 @@
+name: CI/CD Pipeline - PredictX Soroban & Web App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  # ── JOB 1: Test & Build Soroban Smart Contracts ──
+  contracts-ci:
+    name: 🦀 Soroban Smart Contracts CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Stellar CLI
+        run: |
+          cargo install --locked stellar-cli --version 27.0.0 || true
+
+      - name: Run Cargo Workspace Tests
+        run: cargo test --workspace
+
+      - name: Build Soroban WASM Contracts
+        run: |
+          stellar contract build
+
+  # ── JOB 2: Build Next.js Frontend App ──
+  web-ci:
+    name: ⚡ Next.js Web App CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'stellar-market-web/package-lock.json'
+
+      - name: Install npm dependencies
+        working-directory: stellar-market-web
+        run: npm ci
+
+      - name: Build Next.js Web Application
+        working-directory: stellar-market-web
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # ── JOB 3: CD Release & Testnet Deployment Audit ──
+  deploy-ready:
+    name: 🚀 Production & Testnet Release Audit
+    needs: [contracts-ci, web-ci]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Audit Deployed Contracts Summary
+        run: |
+          echo "=== PREDICTX CI/CD PASSED ==="
+          cat deployed-contracts.json
