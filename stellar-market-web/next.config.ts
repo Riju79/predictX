@@ -1,7 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Turbopack config (Next.js 16 default) — used in dev
+  turbopack: {},
+  // Webpack config — used by Vercel production builds
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        buffer: require.resolve('buffer/'),
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
