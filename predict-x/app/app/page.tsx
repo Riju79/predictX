@@ -28,7 +28,7 @@ import {
   getFactoryClient, 
   getAmmClient 
 } from '@/src/config/stellar';
-import { db } from '@/src/backend/db';
+import * as api from '@/src/backend/api';
 
 const MARKET_ID = STELLAR_CONFIG.contracts.market;
 const TOKEN_ID = STELLAR_CONFIG.contracts.token;
@@ -367,14 +367,15 @@ export default function AppDashboard() {
 
   // Load persistent custom markets on mount
   useEffect(() => {
-    const storedCustom = db.getCustomMarkets();
-    if (storedCustom && storedCustom.length > 0) {
-      setMarkets(prev => {
-        const existingMap = new Map(prev.map(m => [m.id, m]));
-        storedCustom.forEach(cm => existingMap.set(cm.id, cm));
-        return Array.from(existingMap.values());
-      });
-    }
+    api.getCustomMarkets().then(storedCustom => {
+      if (storedCustom && storedCustom.length > 0) {
+        setMarkets(prev => {
+          const existingMap = new Map(prev.map(m => [m.id, m]));
+          storedCustom.forEach((cm: any) => existingMap.set(cm.id, cm));
+          return Array.from(existingMap.values());
+        });
+      }
+    }).catch(e => console.warn('Failed to load custom markets:', e));
   }, []);
 
   const handleSelectMarket = (m: Market) => {
@@ -502,7 +503,7 @@ export default function AppDashboard() {
 
     // ── Query on-chain market state for each created market to compute creator earnings ──
     try {
-      const userCreated = db.getCreatedMarkets(pk);
+      const userCreated = await api.getCreatedMarkets(pk);
       if (userCreated.length > 0) {
         const marketClient = getMarketClient(pk);
         const earningsMap: Record<string, { volume: number; earnings: number }> = {};
@@ -534,16 +535,18 @@ export default function AppDashboard() {
   // Auto Wallet Synchronization Effect across refreshes & reconnects
   useEffect(() => {
     if (walletConnected && publicKey) {
-      const userTrades = db.getTrades(publicKey);
-      setTradeHistory(userTrades);
+      api.getTrades(publicKey)
+        .then(setTradeHistory)
+        .catch(e => console.warn('Failed to load trades:', e));
 
-      const userCreated = db.getCreatedMarkets(publicKey);
-      setCreatedMarkets(userCreated);
+      api.getCreatedMarkets(publicKey)
+        .then(setCreatedMarkets)
+        .catch(e => console.warn('Failed to load created markets:', e));
 
-      const userPort = db.getPortfolio(publicKey);
-      if (userPort && userPort.length > 0) {
-        setPortfolio(userPort);
-      }
+      api.getPortfolio(publicKey)
+        .then(userPort => { if (userPort && userPort.length > 0) setPortfolio(userPort as any); })
+        .catch(e => console.warn('Failed to load portfolio:', e));
+
       loadMarketData(publicKey);
     } else {
       setTradeHistory([]);
@@ -655,7 +658,7 @@ export default function AppDashboard() {
     };
 
     if (publicKey) {
-      db.saveTrade({
+      api.saveTrade({
         id: tradeEntry.id,
         userAddress: publicKey,
         marketId,
@@ -667,9 +670,9 @@ export default function AppDashboard() {
         currency,
         timestamp: tradeEntry.timestamp,
         txHash,
-      });
+      }).catch(e => console.warn('saveTrade failed:', e));
 
-      db.savePortfolioItem({
+      api.savePortfolioItem({
         id: `port-${marketId}-${outcomeId}`,
         userAddress: publicKey,
         marketId,
@@ -679,7 +682,7 @@ export default function AppDashboard() {
         shares: actualSharesOut,
         avgPrice: amount / Math.max(0.0001, actualSharesOut),
         cost: amount,
-      });
+      }).catch(e => console.warn('savePortfolioItem failed:', e));
     }
 
     // Record trade history entry
@@ -720,7 +723,7 @@ export default function AppDashboard() {
 
         const updatedOutcomes = m.outcomes.map((o, i) => ({ ...o, probability: newProbs[i] }));
         const updatedM = { ...m, outcomes: updatedOutcomes };
-        db.saveCustomMarket(updatedM);
+        api.saveCustomMarket(updatedM).catch(e => console.warn('saveCustomMarket failed:', e));
         return updatedM;
       }
       return m;
@@ -795,7 +798,7 @@ export default function AppDashboard() {
     };
 
     // Save custom market permanently
-    db.saveCustomMarket(createdMarket);
+    api.saveCustomMarket(createdMarket).catch(e => console.warn('saveCustomMarket failed:', e));
 
     setMarkets(prev => [createdMarket, ...prev]);
 
@@ -810,10 +813,10 @@ export default function AppDashboard() {
     };
 
     if (publicKey) {
-      db.saveCreatedMarket({
+      api.saveCreatedMarket({
         ...createdEntry,
         creatorAddress: publicKey,
-      });
+      }).catch(e => console.warn('saveCreatedMarket failed:', e));
     }
 
     // Record created market entry
@@ -950,19 +953,22 @@ export default function AppDashboard() {
 
     // Update local & persistent portfolio state atomically
     if (publicKey) {
-      const existing = db.getPortfolio(publicKey).find(p => p.marketId === marketId && p.outcomeId === outcomeId);
-      if (existing) {
-        const remainingShares = Math.max(0, existing.shares - sharesCount);
-        if (remainingShares <= 0.01) {
-          db.removePortfolioItem(publicKey, marketId, outcomeId);
-        } else {
-          db.savePortfolioItem({
-            ...existing,
-            shares: remainingShares,
-            cost: (existing.cost * remainingShares) / existing.shares,
-          });
+      api.getPortfolio(publicKey).then(portfolio => {
+        const existing = portfolio.find(p => p.marketId === marketId && p.outcomeId === outcomeId);
+        if (existing) {
+          const remainingShares = Math.max(0, existing.shares - sharesCount);
+          if (remainingShares <= 0.01) {
+            api.removePortfolioItem(publicKey, marketId, outcomeId)
+              .catch(e => console.warn('removePortfolioItem failed:', e));
+          } else {
+            api.savePortfolioItem({
+              ...existing,
+              shares: remainingShares,
+              cost: (existing.cost * remainingShares) / existing.shares,
+            }).catch(e => console.warn('savePortfolioItem failed:', e));
+          }
         }
-      }
+      }).catch(e => console.warn('getPortfolio failed:', e));
     }
 
     setPortfolio(prev => {
@@ -994,7 +1000,7 @@ export default function AppDashboard() {
     };
     setTradeHistory(prev => [historyEntry, ...prev]);
     if (publicKey) {
-      db.saveTrade({
+      api.saveTrade({
         id: historyEntry.id,
         userAddress: publicKey,
         marketId,
@@ -1006,7 +1012,7 @@ export default function AppDashboard() {
         currency,
         timestamp: new Date().toISOString(),
         txHash: sellTxHash,
-      });
+      }).catch(e => console.warn('saveTrade (sell) failed:', e));
     }
   };
 
@@ -1061,7 +1067,8 @@ export default function AppDashboard() {
     }
 
     if (publicKey) {
-      db.removePortfolioItem(publicKey, marketId, '');
+      api.removePortfolioItem(publicKey, marketId, '')
+        .catch(e => console.warn('removePortfolioItem (claim) failed:', e));
     }
     setPortfolio(prev => prev.filter(p => p.marketId !== marketId));
   };
@@ -1162,21 +1169,22 @@ export default function AppDashboard() {
     }
 
     if (publicKey) {
-      const currentPositions = db.getLPPositions(publicKey, marketId);
-      const prevAmount = currentPositions[0]?.amount || 0;
-      const newAmount = prevAmount + amount;
-      const totalPool = (parseFloat(target.vol.replace(/[^0-9.]/g, '')) || 500) + amount;
-      db.saveLPPosition({
-        id: `lp-${marketId}-${publicKey}`,
-        userAddress: publicKey,
-        marketId,
-        marketTitle: target.title,
-        amount: newAmount,
-        sharePct: Math.min(100, parseFloat(((newAmount / totalPool) * 100).toFixed(1))),
-        pendingRewards: parseFloat((amount * 0.015).toFixed(2)),
-        claimedRewards: 0,
-        updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
+      api.getLPPositions(publicKey, marketId).then(currentPositions => {
+        const prevAmount = currentPositions[0]?.amount || 0;
+        const newAmount = prevAmount + amount;
+        const totalPool = (parseFloat(target.vol.replace(/[^0-9.]/g, '')) || 500) + amount;
+        return api.saveLPPosition({
+          id: `lp-${marketId}-${publicKey}`,
+          userAddress: publicKey,
+          marketId,
+          marketTitle: target.title,
+          amount: newAmount,
+          sharePct: Math.min(100, parseFloat(((newAmount / totalPool) * 100).toFixed(1))),
+          pendingRewards: parseFloat((amount * 0.015).toFixed(2)),
+          claimedRewards: 0,
+          updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+      }).catch(e => console.warn('saveLPPosition failed:', e));
     }
   };
 
@@ -1231,17 +1239,18 @@ export default function AppDashboard() {
     }
 
     if (publicKey) {
-      const currentPositions = db.getLPPositions(publicKey, marketId);
-      const prevAmount = currentPositions[0]?.amount || 0;
-      if (prevAmount <= amount) {
-        db.removeLPPosition(publicKey, marketId);
-      } else {
-        db.saveLPPosition({
-          ...currentPositions[0],
-          amount: prevAmount - amount,
-          updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        });
-      }
+      api.getLPPositions(publicKey, marketId).then(currentPositions => {
+        const prevAmount = currentPositions[0]?.amount || 0;
+        if (prevAmount <= amount) {
+          return api.removeLPPosition(publicKey, marketId);
+        } else {
+          return api.saveLPPosition({
+            ...currentPositions[0],
+            amount: prevAmount - amount,
+            updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          });
+        }
+      }).catch(e => console.warn('removeLPPosition failed:', e));
     }
   };
 
