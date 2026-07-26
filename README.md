@@ -23,8 +23,8 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 PPT](https://predictx-presentation.vercel.app/) .[ DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
-[FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
+[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 PPT](https://predictx-presentation.vercel.app/) .[🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
+[📄FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
 
 </div>
 
@@ -429,7 +429,7 @@ We're actively gathering feedback from early users to improve PredictX.
 <div align="center">
 
 ### 📋 [Submit Feedback & Feature Requests](https://forms.gle/SyWZnynTtpWFPG7j8)
-[FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
+[📄FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
 
 *Your feedback directly shapes the protocol's development roadmap.*
 
