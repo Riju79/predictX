@@ -23,7 +23,8 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 Docs](https://predictx-presentation.vercel.app/)
+[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 PPT](https://predictx-presentation.vercel.app/) .[ DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
+[FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
 
 </div>
 
@@ -260,7 +261,7 @@ Soroban-native token contract (SEP-41 compatible) for testnet XLM minting.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/predict-x.git
+git clone https://github.com/Riju79/predict-x.git
 cd predict-x
 
 # Install frontend dependencies
@@ -387,18 +388,22 @@ stellar contract bindings typescript \
 > *Connect your Freighter wallet, mint testnet XLM, and start trading!*
 
 | Markets Feed | Trading Interface | Portfolio |
-|:---:|:---:|:---:|
+|:<img width="1918" height="1021" alt="Screenshot 2026-07-26 173916" src="https://github.com/user-attachments/assets/3c7b8448-7ffd-4a89-b312-277a69736e8e" />---:|:---:|:---:|
 | Browse active prediction markets | Buy/Sell shares with live AMM quotes | Track positions and trade history |
 
 | Perpetuals Terminal | Market Detail | Create Market |
-|:---:|:---:|:---:|
+|:---:|:<img width="1918" height="1025" alt="Screenshot 2026-07-26 173832" src="https://github.com/user-attachments/assets/d496b793-3d8f-4418-97c5-501edab2a49a" />
+---:|:---:|
 | Leveraged crypto price perpetuals | In-depth market analysis view | Deploy your own prediction market |
 
----
+---(<img width="1912" height="925" alt="Screenshot 2026-07-26 173857" src="https://github.com/user-attachments/assets/69f1c356-0318-4756-8e72-5f1c0610a05f" />
+)
+
+
 
 ## 🎥 Demo Video
 
-> 📽️ **[Watch Full Demo →](#)** — See PredictX in action: wallet connect, market creation, buying/selling shares, and on-chain transaction confirmation.
+> 📽️ **[Watch Full Demo →](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)** — See PredictX in action: wallet connect, market creation, buying/selling shares, and on-chain transaction confirmation.
 
 ---
 
@@ -424,6 +429,7 @@ We're actively gathering feedback from early users to improve PredictX.
 <div align="center">
 
 ### 📋 [Submit Feedback & Feature Requests](https://forms.gle/SyWZnynTtpWFPG7j8)
+[FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
 
 *Your feedback directly shapes the protocol's development roadmap.*
 
