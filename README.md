@@ -23,7 +23,7 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/LBZUh6e13CZmzpzm8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 Docs](https://predictx-presentation.vercel.app/)
+[🚀 Live Demo](#https://predict-x-gray.vercel.app/) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 Docs](https://predictx-presentation.vercel.app/)
 
 </div>
 
@@ -423,7 +423,7 @@ We're actively gathering feedback from early users to improve PredictX.
 
 <div align="center">
 
-### 📋 [Submit Feedback & Feature Requests](https://forms.gle/LBZUh6e13CZmzpzm8)
+### 📋 [Submit Feedback & Feature Requests](https://forms.gle/SyWZnynTtpWFPG7j8)
 
 *Your feedback directly shapes the protocol's development roadmap.*
 
@@ -478,7 +478,7 @@ copies of the Software.
 
 **Built with ❤️ on Stellar Soroban**
 
-[⭐ Star this repo](https://github.com/your-username/predict-x) · [📋 Leave Feedback](https://forms.gle/LBZUh6e13CZmzpzm8) · [🐛 Report a Bug](https://github.com/your-username/predict-x/issues)
+[⭐ Star this repo](https://github.com/Riju79/predict-x) · [📋 Leave Feedback](https://forms.gle/SyWZnynTtpWFPG7j8) · [🐛 Report a Bug](https://github.com/Riju79/predict-x/issues)
 
 <sub>PredictX is deployed on Stellar Testnet. Not financial advice. Do not use real funds.</sub>
 
