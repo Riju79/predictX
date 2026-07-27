@@ -416,8 +416,13 @@ The following recent commits address user feedback iterations across database pe
 
 | Commit | Description / Feedback Resolved |
 |---|---|
-
+| [`8555cd1`](https://github.com/Riju79/predict-x/commit/8555cd1) | **refactor(wallet)**: Clean up redundant components and organize modular desktop/mobile wallet architecture |
+| [`1be22cc`](https://github.com/Riju79/predict-x/commit/1be22cc) | **refactor(mobile-wallet)**: Rebuild mobile Freighter integration from scratch adhering strictly to official SDF specs |
+| [`a7f3c5b`](https://github.com/Riju79/predict-x/commit/a7f3c5b) | **fix(mobile-wallet)**: Implement official Freighter dApp browser guidance flow & eliminate invalid Safari deep-link error |
+| [`3bde623`](https://github.com/Riju79/predict-x/commit/3bde623) | **fix(mobile-wallet)**: Add Copy URL for Freighter in-app browser to prevent 404 page navigation |
+| [`40a8ca9`](https://github.com/Riju79/predict-x/commit/40a8ca9) | **feat(mobile-wallet)**: Add dedicated mobile Freighter connection workflow, device detection router & return state restoration |
 | [`9a1e963`](https://github.com/Riju79/predict-x/commit/9a1e963) | **feat(responsive)**: Add full tablet and mobile responsive layout & hamburger slide-in menu |
+| [`1383d02`](https://github.com/Riju79/predict-x/commit/1383d02) | **feat(database)**: Replace localStorage indexer with Neon Postgres database for multi-user trade analytics |
 
 ---
 
