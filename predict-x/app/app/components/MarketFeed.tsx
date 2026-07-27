@@ -72,7 +72,7 @@ export default function MarketFeed({
       </div>
 
       {/* Filters Row */}
-      <div style={{
+      <div className="mkt-filter-row" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 12, flexWrap: 'wrap', marginBottom: 16,
       }}>

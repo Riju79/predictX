@@ -1353,9 +1353,10 @@ export default function AppDashboard() {
     <div style={{ minHeight: '100vh', background: '#0A0C10', paddingBottom: 60, position: 'relative' }}>
 
       {/* Toast Notification Container */}
-      <div style={{
+      <div className="toast-container" style={{
         position: 'fixed', bottom: 20, right: 20, zIndex: 2000,
         display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none',
+        maxWidth: 'calc(100vw - 40px)',
       }}>
         {toasts.map(tItem => (
           <div key={tItem.id} style={{
@@ -1391,18 +1392,18 @@ export default function AppDashboard() {
       )}
 
       {/* Main Views */}
-      <div style={{ padding: '24px', maxWidth: 1440, margin: '0 auto' }}>
+      <div className="dash-main-content" style={{ padding: '24px', maxWidth: 1440, margin: '0 auto' }}>
 
         {activeRoute === 'markets' && (
           <>
             {/* Featured Layout - Only displayed on Trending Category */}
             {activeCategory === 'Trending' && (
-              <div style={{
+              <div className="hero-row-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 320px',
                 gap: 18,
                 marginBottom: 20,
-              }} className="hero-row-grid">
+              }}>
                 <FeaturedCard onSelectMarket={handleSelectMarket} markets={markets} />
                 <SidebarCol setActiveCategory={setActiveCategory} setActiveRoute={setActiveRoute} />
               </div>
@@ -1479,7 +1480,7 @@ export default function AppDashboard() {
           zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 20,
         }} onClick={() => setIsWalletOpen(false)}>
-          <div style={{
+          <div className="wallet-modal-inner" style={{
             width: '100%', maxWidth: 520, background: t.surface, border: `1px solid ${t.line}`,
             borderRadius: 16, padding: 22, display: 'flex', flexDirection: 'column', gap: 16,
             boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
@@ -1592,6 +1593,7 @@ export default function AppDashboard() {
               ].map(tab => (
                 <button
                   key={tab.key}
+                  className="wallet-tab-btn"
                   onClick={() => setWalletTab(tab.key as any)}
                   style={{
                     flex: 1, padding: '8px 2px', fontSize: 11.5, fontWeight: 700,

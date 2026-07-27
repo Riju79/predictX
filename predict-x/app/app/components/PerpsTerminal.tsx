@@ -186,7 +186,7 @@ export default function PerpsTerminal({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 10 }}>
 
       {/* ── UNDERSTANDING PERPETUALS HERO BANNER ── */}
-      <div style={{
+      <div className="perps-hero-wrap" style={{
         background: 'linear-gradient(135deg, #0c081d 0%, #040308 100%)',
         border: '1px solid rgba(129, 140, 248, 0.35)',
         borderRadius: 16,
@@ -207,7 +207,7 @@ export default function PerpsTerminal({
         }} />
 
         {/* Left Content */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: '62%', zIndex: 1 }}>
+        <div className="perps-hero-content" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: '62%', zIndex: 1 }}>
           <h2 style={{ fontFamily: fontDisplay, fontSize: 20, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
             Understanding Perpetuals
           </h2>
@@ -215,7 +215,7 @@ export default function PerpsTerminal({
             Trade prices up or down, with up to 6x leverage and no expiration.
           </p>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <div className="perps-hero-buttons" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <button style={{
               background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)',
               color: '#090714',
@@ -248,8 +248,8 @@ export default function PerpsTerminal({
           </div>
         </div>
 
-        {/* Right Content: Crypto Leverage Badges (Stacked vertically matching screenshot) */}
-        <div style={{
+        {/* Right Content: Crypto Leverage Badges */}
+        <div className="perps-hero-badges" style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
@@ -317,6 +317,7 @@ export default function PerpsTerminal({
             return (
               <div
                 key={asset.symbol}
+                className="perps-asset-row"
                 onClick={() => handleSelectPerpMarket(asset)}
                 style={{
                   background: '#12161E', border: '1px solid #1F2532',
@@ -364,7 +365,7 @@ export default function PerpsTerminal({
                 </div>
 
                 {/* 3. 24h Vol & Funding */}
-                <div style={{ minWidth: 160 }}>
+                <div className="perps-asset-vol" style={{ minWidth: 160 }}>
                   <div style={{ fontSize: 12.5, color: '#94A3B8', fontFamily: fontMono }}>
                     24h vol: <span style={{ color: '#F1F5F9' }}>{asset.vol24h}</span>
                   </div>
@@ -374,7 +375,7 @@ export default function PerpsTerminal({
                 </div>
 
                 {/* 4. Small Trend Sparkline */}
-                <div style={{ width: 80, height: 26 }}>
+                <div className="perps-asset-chart" style={{ width: 80, height: 26 }}>
                   <svg viewBox="0 0 100 15" preserveAspectRatio="none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
                     <path
                       d={asset.sparkPoints}
@@ -482,7 +483,7 @@ export default function PerpsTerminal({
 
       {/* ── Slide-Out Interactive Order Entry Panel / Overlay matching screenshot ── */}
       {tradingAsset && (
-        <div style={{
+        <div className="perps-order-panel" style={{
           position: 'fixed', top: 0, right: 0, width: 360, height: '100vh',
           background: '#090714', borderLeft: '1px solid #1a152e',
           backdropFilter: 'blur(16px)', zIndex: 1000, padding: '24px 22px',

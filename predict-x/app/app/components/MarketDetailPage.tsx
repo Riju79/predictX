@@ -624,7 +624,7 @@ export default function MarketDetailPage({
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, background: '#07090E', padding: 14, borderRadius: 10, border: `1px solid #1E293B` }}>
+                <div className="lp-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, background: '#07090E', padding: 14, borderRadius: 10, border: `1px solid #1E293B` }}>
                   <div>
                     <div style={{ fontSize: 11, color: '#64748B', fontFamily: fontBody }}>Total Pool Liquidity</div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontFamily: fontMono }}>{market.vol} XLM</div>

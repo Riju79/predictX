@@ -706,6 +706,274 @@ footer { background: #fff; color: var(--ink); padding: 80px 56px 40px; }
   .markets-modal { padding: 24px; }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABLET BREAKPOINT — 768px
+   Target: tablet portrait, large mobile landscape
+   Rule: Desktop (1024px+) untouched. Only affect ≤768px.
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Landing nav */
+  #mainnav {
+    padding: 12px 20px !important;
+  }
+  #mainnav.scrolled {
+    padding: 10px 20px !important;
+  }
+
+  /* Landing hero: hide phone mockup, show text only on tablet */
+  .hero-body {
+    grid-template-columns: 1fr !important;
+    padding: 100px 20px 60px !important;
+    text-align: center !important;
+    gap: 28px !important;
+  }
+
+  /* Centre hero CTA buttons on tablet */
+  .cta-row { justify-content: center !important; flex-wrap: wrap !important; }
+  .backed { justify-content: center !important; flex-wrap: wrap !important; }
+
+  /* Funded section */
+  .funded {
+    padding: 80px 20px 60px !important;
+  }
+  .funded-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  /* Trophy canvas: don't overflow */
+  .particle-wrap canvas {
+    max-width: 100% !important;
+    transform: scale(1) !important;
+  }
+
+  /* Scrolly tabs section */
+  .scrolly {
+    padding: 70px 20px 60px !important;
+  }
+  .scrolly-inner {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+    min-height: auto !important;
+  }
+
+  /* Product section */
+  .product {
+    padding: 60px 20px !important;
+  }
+  .prod-layout {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* Stats row: 2 columns on tablet */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+  .stat { border-left: none !important; }
+
+  /* Trust section */
+  .trust {
+    padding: 50px 20px !important;
+  }
+
+  /* Testimonial */
+  .testimonial {
+    padding: 20px 20px 60px !important;
+  }
+  .quote-card {
+    padding: 30px 20px !important;
+  }
+  .quote-card q {
+    font-size: clamp(18px, 4vw, 26px) !important;
+  }
+
+  /* FAQ section */
+  .faq {
+    padding: 60px 20px !important;
+  }
+  .faq-item .q {
+    font-size: 18px !important;
+  }
+
+  /* Landing page footer */
+  footer {
+    padding: 60px 20px 30px !important;
+  }
+  .footer-top {
+    flex-direction: column !important;
+    gap: 24px !important;
+  }
+  .footer-bottom {
+    flex-direction: column !important;
+    gap: 10px !important;
+    text-align: center !important;
+  }
+  .footer-bottom p {
+    min-width: unset !important;
+  }
+
+  /* Markets modal */
+  .markets-modal {
+    padding: 18px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Dashboard app footer grid: 2 cols on tablet */
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MOBILE BREAKPOINT — 640px
+   Target: most smartphones in landscape / larger phones
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Landing nav: tighter */
+  #mainnav {
+    padding: 10px 16px !important;
+  }
+
+  /* Hero: reduce padding more */
+  .hero-body {
+    padding: 90px 16px 48px !important;
+  }
+
+  /* Hide phone mockup on small mobile */
+  .hero-body > div:last-child {
+    display: none !important;
+  }
+
+  /* Funded */
+  .funded {
+    padding: 60px 16px 48px !important;
+  }
+
+  /* Scrolly */
+  .scrolly {
+    padding: 48px 16px 40px !important;
+  }
+
+  /* Tab navigation: scrollable */
+  .tabnav {
+    gap: 0 !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .tabnav .tabitem {
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 8px 10px 14px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Product section */
+  .product {
+    padding: 48px 16px !important;
+  }
+
+  /* Stats: still 2 cols but tighter */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+  }
+  .stat .num {
+    font-size: clamp(22px, 6vw, 36px) !important;
+  }
+
+  /* Trust / marquee logos */
+  .trust {
+    padding: 40px 16px !important;
+  }
+
+  /* Testimonial */
+  .quote-card {
+    padding: 22px 16px !important;
+  }
+  .quote-card q {
+    font-size: clamp(16px, 4.5vw, 22px) !important;
+  }
+
+  /* FAQ */
+  .faq {
+    padding: 48px 16px !important;
+  }
+  .faq-item .q {
+    font-size: 16px !important;
+    gap: 10px !important;
+  }
+  .faq-head .fam {
+    font-size: 32px !important;
+  }
+
+  /* Landing footer */
+  footer {
+    padding: 48px 16px 24px !important;
+  }
+
+  /* Dashboard app footer: single column */
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Promo bar */
+  .promo-bar {
+    font-size: 12px !important;
+    padding: 8px 36px 8px 16px !important;
+    text-align: left !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SMALL MOBILE BREAKPOINT — 480px
+   Target: standard smartphones (iPhone SE, Galaxy S series portrait)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Stats: single column on very small screens */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Markets modal overlay: full width */
+  .markets-modal {
+    width: 100% !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 90vh !important;
+  }
+
+  /* Snapshot label */
+  .snapshot-label {
+    margin: 50px 0 20px !important;
+    font-size: 12px !important;
+  }
+
+  /* Tab copy headings */
+  .tab-copy h3 {
+    font-size: clamp(28px, 8vw, 44px) !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EXTRA SMALL MOBILE — 375px (iPhone standard)
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 375px) {
+  /* Hero h1 min size */
+  .hero-body h1 {
+    font-size: clamp(52px, 14vw, 72px) !important;
+    letter-spacing: -1.5px !important;
+  }
+
+  /* Product section cards: contain overflow */
+  .prod-layout > div:last-child {
+    overflow: hidden !important;
+  }
+}
+
 /* Digital aurora background scene styling */
 :root {
   --bg-color: #000500;
@@ -861,8 +1129,28 @@ footer { background: #fff; color: var(--ink); padding: 80px 56px 40px; }
   box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
 }
 
-/* Responsive Nav Updates */
+/* ─────────────────────────────────────────────────────────────────────────────
+   DASHBOARD APP — Responsive Updates
+   Controls the /app dashboard navigation and layout
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Dashboard navbar: hide desktop elements on mobile/tablet */
+@media (max-width: 1023px) {
+  .dash-nav-links { display: none !important; }
+  .dash-search-bar { display: none !important; }
+  .dash-create-btn { display: none !important; }
+  .dash-currency-toggle { display: none !important; }
+  .dash-hamburger { display: flex !important; }
+}
+
+@media (min-width: 1024px) {
+  .dash-hamburger { display: none !important; }
+  .dash-mobile-drawer { display: none !important; }
+}
+
+/* Dashboard main content: add side padding on mobile */
 @media (max-width: 768px) {
+  /* Landing page legacy nav rules */
   #mainnav {
     padding: 12px 20px !important;
   }
@@ -874,5 +1162,124 @@ footer { background: #fff; color: var(--ink); padding: 80px 56px 40px; }
   }
   .nav-cta {
     display: none !important;
+  }
+
+  /* Dashboard content padding */
+  .dash-main-content {
+    padding: 16px !important;
+  }
+
+  /* Hero row grid: collapse sidebar on tablet/mobile */
+  .hero-row-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Perps terminal: wrap hero section on mobile */
+  .perps-hero-wrap {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .perps-hero-badges {
+    display: none !important;
+  }
+  .perps-hero-content {
+    max-width: 100% !important;
+  }
+  .perps-hero-buttons {
+    flex-wrap: wrap !important;
+  }
+
+  /* Perps asset row: adapt for mobile */
+  .perps-asset-row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+  .perps-asset-vol { display: none !important; }
+  .perps-asset-chart { display: none !important; }
+
+  /* Wallet modal: full-width on mobile */
+  .wallet-modal-inner {
+    width: calc(100vw - 32px) !important;
+    max-width: 100% !important;
+  }
+
+  /* Market detail 2-col grid: stack on mobile/tablet */
+  .market-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Wallet modal tab labels: smaller font on mobile */
+  .wallet-tab-btn {
+    font-size: 10px !important;
+    padding: 8px 1px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Category bar text: slightly smaller */
+  .dash-category-bar button {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+
+  /* Market feed filter row: stack vertically */
+  .mkt-filter-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* Toast notifications: full width on mobile */
+  .toast-container {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 16px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  /* Perps order form drawer: full-width on mobile */
+  .perps-order-panel {
+    width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-left: none !important;
+    border-top: 1px solid #1a152e !important;
+    top: auto !important;
+    bottom: 0 !important;
+    height: 85vh !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  /* LP stats grid: 2 columns on mobile */
+  .lp-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Market feed: 2 cols on mobile */
+  .mkt-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ── EXTRA SMALL ≤480px: single card column, full-width modals ── */
+@media (max-width: 480px) {
+  /* Market feed: 1 col on very small screens */
+  .mkt-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* LP stats: 1 col */
+  .lp-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Smaller heading on market detail */
+  .market-detail-heading {
+    font-size: 20px !important;
+  }
+
+  /* Featured card grid: always 1 col */
+  .featured-card-grid {
+    grid-template-columns: 1fr !important;
   }
 }
