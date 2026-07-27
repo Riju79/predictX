@@ -394,9 +394,10 @@ stellar contract bindings typescript \
 
 <br/>
 
-| Markets Feed | Trading Interface | Market Detail |
+| Landing page | Trading Interface | Market Detail |
 |:---:|:---:|:---:|
-| <img width="1918" height="1021" alt="Markets Feed" src="https://github.com/user-attachments/assets/3c7b8448-7ffd-4a89-b312-277a69736e8e" /> | Buy/Sell shares with live AMM constant product quotes | <img width="1918" height="1025" alt="Market Detail" src="https://github.com/user-attachments/assets/d496b793-3d8f-4418-97c5-501edab2a49a" /> |
+| <img width="1918" height="1021" alt="Markets Feed" src="https://github.com/user-attachments/assets/3c7b8448-7ffd-4a89-b312-277a69736e8e" /> | <img width="1913" height="1021" alt="Screenshot 2026-07-28 031451" src="https://github.com/user-attachments/assets/8a6ac378-8fd5-4c93-ba1a-3837d2ffae5e" />
+ | <img width="1918" height="1025" alt="Market Detail" src="https://github.com/user-attachments/assets/d496b793-3d8f-4418-97c5-501edab2a49a" /> |
 
 ---
 
@@ -414,11 +415,8 @@ The following recent commits address user feedback iterations across database pe
 
 | Commit | Description / Feedback Resolved |
 |---|---|
-| [`a7f3c5b`](https://github.com/Riju79/predict-x/commit/a7f3c5b) | **fix(mobile-wallet)**: Implement official Freighter dApp browser guidance flow & eliminate invalid Safari deep-link error |
-| [`3bde623`](https://github.com/Riju79/predict-x/commit/3bde623) | **fix(mobile-wallet)**: Add Copy URL for Freighter in-app browser to prevent 404 page navigation |
-| [`40a8ca9`](https://github.com/Riju79/predict-x/commit/40a8ca9) | **feat(mobile-wallet)**: Add dedicated mobile Freighter connection workflow, device detection router & return state restoration |
+
 | [`9a1e963`](https://github.com/Riju79/predict-x/commit/9a1e963) | **feat(responsive)**: Add full tablet and mobile responsive layout & hamburger slide-in menu |
-| [`1383d02`](https://github.com/Riju79/predict-x/commit/1383d02) | **feat(database)**: Replace localStorage indexer with Neon Postgres database for multi-user trade analytics |
 
 ---
 
