@@ -86,7 +86,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
         {/* ── STEP 1: NOT INSTALLED / MOBILE BROWSER GUIDANCE ── */}
         {step === 'NOT_INSTALLED' && (
           <>
-            {/* Wallet Icon Badge */}
+            {/* Badge Icon */}
             <div
               style={{
                 width: 64,
@@ -125,13 +125,13 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   lineHeight: 1.55,
                 }}
               >
-                To use PredictX on mobile, open this site inside the <strong style={{ color: '#F8FAFC' }}>Freighter Wallet App&apos;s Browser</strong> or install Freighter.
+                To use PredictX on mobile, open this app inside the <strong style={{ color: '#F8FAFC' }}>Freighter Wallet App&apos;s Browser</strong> or install Freighter.
               </p>
             </div>
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 2 }}>
-              {/* Button 1: Copy Site URL for Freighter Mobile App Browser */}
+              {/* Button 1: Copy URL for Freighter App Browser */}
               <button
                 onClick={handleCopyUrl}
                 style={{
@@ -155,7 +155,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                 <span>{copied ? '✅ Copied! Open in Freighter Browser' : '📋 Copy URL for Freighter App'}</span>
               </button>
 
-              {/* Button 2: Download Freighter */}
+              {/* Button 2: Download Freighter App */}
               <button
                 onClick={handleDownload}
                 style={{
@@ -217,10 +217,9 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
           </>
         )}
 
-        {/* ── STEP 2: CONNECTING / WAITING FOR APPROVAL STATE ── */}
+        {/* ── STEP 2: CONNECTING / WAITING FOR APPROVAL ── */}
         {(step === 'CONNECTING' || step === 'WAITING_APPROVAL') && (
           <>
-            {/* Animated Loading Ring */}
             <div style={{ position: 'relative', width: 68, height: 68 }}>
               <div
                 style={{
@@ -253,7 +252,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
               <p style={{ margin: 0, fontSize: 13, color: '#94A3B8', lineHeight: 1.55 }}>
                 {step === 'CONNECTING'
                   ? 'Initiating secure wallet connection request...'
-                  : 'Please approve the connection request in your Freighter Mobile app.'}
+                  : 'Please approve the connection request in your Freighter app.'}
               </p>
             </div>
 
@@ -278,7 +277,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
           </>
         )}
 
-        {/* ── STEP 3: ERROR / REJECTED STATE ── */}
+        {/* ── STEP 3: ERROR / REJECTED ── */}
         {step === 'ERROR' && (
           <>
             <div
@@ -302,7 +301,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                 Connection Notice
               </h2>
               <p style={{ margin: 0, fontSize: 13, color: '#FCA5A5', lineHeight: 1.55 }}>
-                {errorMessage || 'Connection request failed or was rejected. Open PredictX inside Freighter Mobile App browser.'}
+                {errorMessage || 'Connection failed or rejected. Please open PredictX inside the Freighter Mobile App browser.'}
               </p>
             </div>
 
@@ -361,7 +360,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
           </>
         )}
 
-        {/* ── STEP 4: SUCCESS STATE ── */}
+        {/* ── STEP 4: SUCCESS ── */}
         {step === 'SUCCESS' && (
           <>
             <div

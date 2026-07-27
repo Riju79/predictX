@@ -29,7 +29,7 @@ export function isMobileDevice(): boolean {
   return isMobileUA || (isTouchScreen && isSmallScreen);
 }
 
-/** Check if running inside a Web3 mobile browser (like Freighter Mobile or LOBSTR in-app browser) */
+/** Check if running inside a Web3 mobile browser (where window.freighterApi is injected by Freighter Mobile app) */
 export function isMobileWeb3Browser(): boolean {
   if (typeof window === 'undefined') return false;
   const win = window as any;
@@ -42,7 +42,7 @@ export function isMobileWeb3Browser(): boolean {
   );
 }
 
-/** Save current application state before opening mobile wallet or switching apps */
+/** Save application state for session persistence */
 export function saveMobileAppState(state: SavedMobileAppState): void {
   if (typeof window === 'undefined') return;
   try {
@@ -55,7 +55,7 @@ export function saveMobileAppState(state: SavedMobileAppState): void {
   }
 }
 
-/** Retrieve saved mobile application state upon returning */
+/** Retrieve saved mobile application state */
 export function getSavedMobileAppState(): SavedMobileAppState {
   if (typeof window === 'undefined') return {};
   try {
@@ -67,7 +67,7 @@ export function getSavedMobileAppState(): SavedMobileAppState {
   }
 }
 
-/** Clear saved mobile state */
+/** Clear saved mobile application state */
 export function clearMobileAppState(): void {
   if (typeof window === 'undefined') return;
   try {
@@ -78,7 +78,7 @@ export function clearMobileAppState(): void {
   }
 }
 
-/** Copy site URL to clipboard for pasting into Freighter Mobile dApp browser */
+/** Copy current site URL to clipboard for pasting into Freighter Mobile in-app browser */
 export function copySiteUrlForFreighter(): boolean {
   if (typeof window === 'undefined') return false;
   try {
