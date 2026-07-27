@@ -78,32 +78,7 @@ export function clearMobileAppState(): void {
   }
 }
 
-/** Safely open the Freighter Mobile app on iOS / Android via deep link without triggering a 404 web error */
-export function openFreighterMobileApp(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  const currentUrl = encodeURIComponent(window.location.href);
-  const deepLink = `freighter://dapp?url=${currentUrl}`;
-
-  try {
-    // Hidden anchor tag launch
-    const a = document.createElement('a');
-    a.href = deepLink;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      if (a.parentNode) a.parentNode.removeChild(a);
-    }, 500);
-
-    return true;
-  } catch (e) {
-    console.warn('Deep link launch error:', e);
-    return false;
-  }
-}
-
-/** Copy current page URL for pasting into Freighter Mobile Browser */
+/** Copy site URL to clipboard for pasting into Freighter Mobile dApp browser */
 export function copySiteUrlForFreighter(): boolean {
   if (typeof window === 'undefined') return false;
   try {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { openFreighterMobileApp, copySiteUrlForFreighter } from './mobileDetect';
+import { copySiteUrlForFreighter } from './mobileDetect';
 
 export type MobileModalStep = 'NOT_INSTALLED' | 'CONNECTING' | 'WAITING_APPROVAL' | 'ERROR' | 'SUCCESS';
 
@@ -26,15 +26,11 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleOpenApp = () => {
-    openFreighterMobileApp();
-  };
-
   const handleCopyUrl = () => {
     const ok = copySiteUrlForFreighter();
     if (ok) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
+      setTimeout(() => setCopied(false), 3500);
     }
   };
 
@@ -87,7 +83,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* ── STEP 1: NOT INSTALLED / LAUNCH APP STATE ── */}
+        {/* ── STEP 1: NOT INSTALLED / MOBILE BROWSER GUIDANCE ── */}
         {step === 'NOT_INSTALLED' && (
           <>
             {/* Wallet Icon Badge */}
@@ -129,23 +125,23 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   lineHeight: 1.55,
                 }}
               >
-                To use PredictX on mobile, install Freighter Wallet and then return to connect your wallet.
+                To use PredictX on mobile, open this site inside the <strong style={{ color: '#F8FAFC' }}>Freighter Wallet App&apos;s Browser</strong> or install Freighter.
               </p>
             </div>
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 2 }}>
-              {/* Button 1: Open in Freighter App */}
+              {/* Button 1: Copy Site URL for Freighter Mobile App Browser */}
               <button
-                onClick={handleOpenApp}
+                onClick={handleCopyUrl}
                 style={{
                   width: '100%',
                   padding: '13px',
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                  border: '1px solid #818CF8',
+                  background: copied ? 'rgba(16, 185, 129, 0.2)' : 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                  border: `1px solid ${copied ? '#10B981' : '#818CF8'}`,
                   color: '#FFFFFF',
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: 700,
                   cursor: 'pointer',
                   boxShadow: '0 4px 18px rgba(99, 102, 241, 0.38)',
@@ -156,21 +152,20 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <span>📱 Open in Freighter App</span>
-                <span>➔</span>
+                <span>{copied ? '✅ Copied! Open in Freighter Browser' : '📋 Copy URL for Freighter App'}</span>
               </button>
 
-              {/* Button 2: Copy Site URL for In-App Browser */}
+              {/* Button 2: Download Freighter */}
               <button
-                onClick={handleCopyUrl}
+                onClick={handleDownload}
                 style={{
                   width: '100%',
                   padding: '12px',
                   borderRadius: 12,
-                  background: copied ? 'rgba(16, 185, 129, 0.15)' : '#1E293B',
-                  border: `1px solid ${copied ? '#10B981' : '#334155'}`,
-                  color: copied ? '#34D399' : '#F8FAFC',
-                  fontSize: 13,
+                  background: '#1E293B',
+                  border: '1px solid #334155',
+                  color: '#F8FAFC',
+                  fontSize: 13.5,
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
@@ -180,41 +175,19 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <span>{copied ? '✅ URL Copied! Open in Freighter Browser' : '📋 Copy URL for Freighter Browser'}</span>
+                <span>Download Freighter App</span>
               </button>
 
-              {/* Button 3: Download Freighter */}
-              <button
-                onClick={handleDownload}
-                style={{
-                  width: '100%',
-                  padding: '11px',
-                  borderRadius: 12,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: '#CBD5E1',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <span>Download Freighter</span>
-              </button>
-
-              {/* Button 4: Connect Again */}
+              {/* Button 3: Connect Again */}
               <button
                 onClick={onRetry}
                 style={{
                   width: '100%',
-                  padding: '9px',
+                  padding: '10px',
                   borderRadius: 12,
                   background: 'transparent',
-                  border: 'none',
-                  color: '#818CF8',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#CBD5E1',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -223,7 +196,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                 Connect Again
               </button>
 
-              {/* Button 5: Cancel */}
+              {/* Button 4: Cancel */}
               <button
                 onClick={onClose}
                 style={{
@@ -286,23 +259,6 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
               <button
-                onClick={handleOpenApp}
-                style={{
-                  width: '100%',
-                  padding: '11px',
-                  borderRadius: 10,
-                  background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Open Freighter App ➔
-              </button>
-
-              <button
                 onClick={onClose}
                 style={{
                   width: '100%',
@@ -346,43 +302,26 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                 Connection Notice
               </h2>
               <p style={{ margin: 0, fontSize: 13, color: '#FCA5A5', lineHeight: 1.55 }}>
-                {errorMessage || 'Connection request failed or was rejected. If you have Freighter installed, tap "Open in Freighter App".'}
+                {errorMessage || 'Connection request failed or was rejected. Open PredictX inside Freighter Mobile App browser.'}
               </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 4 }}>
               <button
-                onClick={handleOpenApp}
+                onClick={handleCopyUrl}
                 style={{
                   width: '100%',
                   padding: '12px',
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                  border: '1px solid #818CF8',
+                  background: copied ? 'rgba(16, 185, 129, 0.2)' : 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                  border: `1px solid ${copied ? '#10B981' : '#818CF8'}`,
                   color: '#FFFFFF',
                   fontSize: 13.5,
                   fontWeight: 700,
                   cursor: 'pointer',
                 }}
               >
-                Open in Freighter App ➔
-              </button>
-
-              <button
-                onClick={handleCopyUrl}
-                style={{
-                  width: '100%',
-                  padding: '11px',
-                  borderRadius: 12,
-                  background: copied ? 'rgba(16, 185, 129, 0.15)' : '#1E293B',
-                  border: `1px solid ${copied ? '#10B981' : '#334155'}`,
-                  color: copied ? '#34D399' : '#FFFFFF',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {copied ? '✅ URL Copied! Open in Freighter Browser' : '📋 Copy URL for Freighter Browser'}
+                {copied ? '✅ Copied! Open in Freighter Browser' : '📋 Copy URL for Freighter App'}
               </button>
 
               <button
@@ -392,8 +331,8 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   padding: '10px',
                   borderRadius: 12,
                   background: 'transparent',
-                  border: 'none',
-                  color: '#818CF8',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#CBD5E1',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',

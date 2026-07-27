@@ -21,7 +21,7 @@ import {
 } from './walletHelpers';
 import { getTokenClient, fromRawAmount } from '@/src/config/stellar';
 import { InstallWalletModal } from './components/InstallWalletModal';
-import { isMobileDevice, openFreighterMobileApp, getSavedMobileAppState, clearMobileAppState } from './mobile/mobileDetect';
+import { isMobileDevice, getSavedMobileAppState, clearMobileAppState } from './mobile/mobileDetect';
 import { MobileWalletModal, MobileModalStep } from './mobile/MobileWalletModal';
 
 interface WalletProviderProps {
@@ -618,7 +618,6 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         onClose={() => setShowMobileModal(false)}
         onRetry={connectMobile}
         onDownloadFreighter={() => {
-          openFreighterMobileApp();
           window.open('https://www.freighter.app', '_blank', 'noopener,noreferrer');
         }}
       />
