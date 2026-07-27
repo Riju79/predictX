@@ -383,27 +383,42 @@ stellar contract bindings typescript \
 
 ---
 
-## 📸 Screenshots
+## 📸 Screenshots & Architecture Visuals
 
-> *Connect your Freighter wallet, mint testnet XLM, and start trading!*
+> *Connect your Freighter wallet, mint testnet XLM, trade perps, view on-chain Neon database analytics, and trade seamlessly on mobile!*
 
-| Markets Feed | Trading Interface | Portfolio |
-|:<img width="1918" height="1021" alt="Screenshot 2026-07-26 173916" src="https://github.com/user-attachments/assets/3c7b8448-7ffd-4a89-b312-277a69736e8e" />---:|:---:|:---:|
-| Browse active prediction markets | Buy/Sell shares with live AMM quotes | Track positions and trade history |
+| 📊 Data Analytics (Neon Postgres DB) | 📱 Mobile Responsive UI |
+|:---:|:---:|
+| <img src="predict-x/public/screenshots/data-analytics.png" width="500" alt="Neon Postgres Data Analytics" /> | <img src="predict-x/public/screenshots/mobile-responsive.jpg" width="280" alt="Mobile Responsive UI" /> |
+| **Real-time On-Chain Indexer**: Neon PostgreSQL tables (`px_portfolio`, `px_trades`, `px_markets`, `px_created_markets`, `px_lp_positions`) | **Mobile Responsive Interface**: Full mobile navbar, drawer, adaptive cards & mobile wallet guidance |
 
-| Perpetuals Terminal | Market Detail | Create Market |
-|:---:|:<img width="1918" height="1025" alt="Screenshot 2026-07-26 173832" src="https://github.com/user-attachments/assets/d496b793-3d8f-4418-97c5-501edab2a49a" />
----:|:---:|
-| Leveraged crypto price perpetuals | In-depth market analysis view | Deploy your own prediction market |
+<br/>
 
----(<img width="1912" height="925" alt="Screenshot 2026-07-26 173857" src="https://github.com/user-attachments/assets/69f1c356-0318-4756-8e72-5f1c0610a05f" />
-)
+| Markets Feed | Trading Interface | Market Detail |
+|:---:|:---:|:---:|
+| <img width="1918" height="1021" alt="Markets Feed" src="https://github.com/user-attachments/assets/3c7b8448-7ffd-4a89-b312-277a69736e8e" /> | Buy/Sell shares with live AMM constant product quotes | <img width="1918" height="1025" alt="Market Detail" src="https://github.com/user-attachments/assets/d496b793-3d8f-4418-97c5-501edab2a49a" /> |
 
-
+---
 
 ## 🎥 Demo Video
 
 > 📽️ **[Watch Full Demo →](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)** — See PredictX in action: wallet connect, market creation, buying/selling shares, and on-chain transaction confirmation.
+
+---
+
+## 🔄 User Feedback Changes & Git Commits
+
+> 🌐 **Live Feedback Build**: [https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/](https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/)
+
+The following recent commits address user feedback iterations across database persistence, mobile UI responsiveness, and mobile wallet integration:
+
+| Commit | Description / Feedback Resolved |
+|---|---|
+| [`a7f3c5b`](https://github.com/Riju79/predict-x/commit/a7f3c5b) | **fix(mobile-wallet)**: Implement official Freighter dApp browser guidance flow & eliminate invalid Safari deep-link error |
+| [`3bde623`](https://github.com/Riju79/predict-x/commit/3bde623) | **fix(mobile-wallet)**: Add Copy URL for Freighter in-app browser to prevent 404 page navigation |
+| [`40a8ca9`](https://github.com/Riju79/predict-x/commit/40a8ca9) | **feat(mobile-wallet)**: Add dedicated mobile Freighter connection workflow, device detection router & return state restoration |
+| [`9a1e963`](https://github.com/Riju79/predict-x/commit/9a1e963) | **feat(responsive)**: Add full tablet and mobile responsive layout & hamburger slide-in menu |
+| [`1383d02`](https://github.com/Riju79/predict-x/commit/1383d02) | **feat(database)**: Replace localStorage indexer with Neon Postgres database for multi-user trade analytics |
 
 ---
 
@@ -429,11 +444,12 @@ We're actively gathering feedback from early users to improve PredictX.
 <div align="center">
 
 ### 📋 [Submit Feedback & Feature Requests](https://forms.gle/SyWZnynTtpWFPG7j8)
-[📄FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
+[📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) · [🌐 Live Feedback Build](https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/)
 
 *Your feedback directly shapes the protocol's development roadmap.*
 
 </div>
+
 
 ---
 
