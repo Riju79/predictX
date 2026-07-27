@@ -11,8 +11,6 @@ interface InstallWalletModalProps {
 export const InstallWalletModal: React.FC<InstallWalletModalProps> = ({ isOpen, onClose, errorMessage }) => {
   if (!isOpen) return null;
 
-  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
   return (
     <>
       {/* Backdrop */}
@@ -62,7 +60,7 @@ export const InstallWalletModal: React.FC<InstallWalletModalProps> = ({ isOpen, 
             color: '#FFFFFF', fontFamily: 'Inter, sans-serif',
             letterSpacing: '-0.3px',
           }}>
-            Freighter Wallet Required
+            Freighter Extension Required
           </h2>
         </div>
 
@@ -76,23 +74,6 @@ export const InstallWalletModal: React.FC<InstallWalletModalProps> = ({ isOpen, 
               ? errorMessage
               : 'The Freighter browser extension is required to connect your wallet and trade on the Stellar Testnet.'}
           </p>
-
-          {isMobile && (
-            <div style={{
-              background: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              borderRadius: 10, padding: '10px 14px',
-              fontSize: 12.5, color: '#FCD34D',
-              fontFamily: 'Inter, sans-serif', lineHeight: 1.6,
-              display: 'flex', gap: 10, alignItems: 'flex-start',
-            }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>📱</span>
-              <span>
-                Mobile browsers don't support wallet extensions.
-                Open this site on a <strong style={{ color: '#FDE68A' }}>desktop Chrome or Brave browser</strong> with the Freighter extension installed.
-              </span>
-            </div>
-          )}
 
           {/* Steps */}
           {[
@@ -130,10 +111,8 @@ export const InstallWalletModal: React.FC<InstallWalletModalProps> = ({ isOpen, 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               transition: 'all 0.15s ease',
             }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            <span>Get Freighter Wallet</span>
+            <span>Get Freighter Extension</span>
             <span>→</span>
           </button>
 
@@ -145,10 +124,7 @@ export const InstallWalletModal: React.FC<InstallWalletModalProps> = ({ isOpen, 
               border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
               color: '#64748B', fontSize: 13.5, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              transition: 'all 0.15s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#94A3B8'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#64748B'; }}
           >
             Close
           </button>

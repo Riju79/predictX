@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useWallet } from '../useWallet';
+import { useWallet } from '../shared/useWallet';
 import { WalletDropdown } from './WalletDropdown';
 
 interface ConnectWalletButtonProps {

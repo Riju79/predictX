@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { useWallet } from '../useWallet';
+import { useWallet } from '../shared/useWallet';
 
 interface WalletDropdownProps {
   isOpen: boolean;

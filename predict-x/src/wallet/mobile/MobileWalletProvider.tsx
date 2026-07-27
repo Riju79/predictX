@@ -9,8 +9,8 @@ import {
   getNetwork,
   setAllowed,
 } from '@stellar/freighter-api';
-import { WalletContext } from './shared/WalletContext';
-import { WalletState } from './shared/walletTypes';
+import { WalletContext } from '../shared/WalletContext';
+import { WalletState } from '../shared/walletTypes';
 import {
   STELLAR_TESTNET_CONFIG,
   STORAGE_KEY_CONNECTED,
@@ -18,17 +18,15 @@ import {
   isTestnetNetwork,
   getStellarExpertAccountUrl,
   fundAccountWithFriendbot,
-} from './shared/walletHelpers';
+} from '../shared/walletHelpers';
 import { getTokenClient, fromRawAmount } from '@/src/config/stellar';
-import { InstallWalletModal } from './desktop/InstallWalletModal';
-import { MobileGuidanceModal, MobileModalStep } from './mobile/MobileGuidanceModal';
-import { isMobileDevice, clearMobileAppState } from './mobile/mobileDetect';
+import { MobileGuidanceModal, MobileModalStep } from './MobileGuidanceModal';
+import { clearMobileAppState } from './mobileDetect';
 
-interface WalletProviderProps {
+interface MobileWalletProviderProps {
   children: ReactNode;
 }
 
-/** Race a promise against a timeout */
 function withTimeout<T>(promise: Promise<T>, ms: number, timeoutError?: string): Promise<T> {
   return Promise.race([
     promise,
@@ -38,8 +36,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, timeoutError?: string):
   ]);
 }
 
-/** Detect whether Freighter API or Mobile provider is available */
-async function detectFreighter(): Promise<boolean> {
+/** Check whether window.freighterApi is injected inside the mobile dApp browser */
+async function detectFreighterMobile(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   const win = window as any;
 
@@ -66,14 +64,14 @@ async function detectFreighter(): Promise<boolean> {
   }
 }
 
-export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
+export const MobileWalletProvider: React.FC<MobileWalletProviderProps> = ({ children }) => {
   const [state, setState] = useState<WalletState>({
     isConnected: false,
     publicKey: '',
     shortAddress: '',
     network: STELLAR_TESTNET_CONFIG.network,
     networkPassphrase: STELLAR_TESTNET_CONFIG.networkPassphrase,
-    walletName: 'Freighter Wallet',
+    walletName: 'Freighter Mobile',
     isLoading: false,
     isFunding: false,
     isFreighterInstalled: false,
@@ -85,12 +83,6 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   });
 
   const [toastMessage, setToastMessage] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-
-  // Desktop install modal state
-  const [showInstallModal, setShowInstallModal] = useState(false);
-  const [installModalError, setInstallModalError] = useState<string | null>(null);
-
-  // Mobile guidance modal state
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [mobileModalStep, setMobileModalStep] = useState<MobileModalStep>('NOT_INSTALLED');
   const [mobileModalError, setMobileModalError] = useState<string | null>(null);
@@ -160,128 +152,12 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // ── DESKTOP CONNECT FLOW (100% LOCKED & UNCHANGED) ──
-  const connectDesktop = useCallback(async () => {
-    if (state.isLoading) return;
-
-    const isInstalled = await detectFreighter();
-    if (!isInstalled) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        isFreighterInstalled: false,
-        error: 'Freighter extension not detected.',
-      }));
-      setInstallModalError(null);
-      setShowInstallModal(true);
-      return;
-    }
-
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const requestWithTimeout = async (): Promise<string> => {
-        const win = window as any;
-        if (win.freighterApi && typeof win.freighterApi.requestAccess === 'function') {
-          try {
-            const res = await withTimeout(win.freighterApi.requestAccess(), 7000, 'TIMEOUT') as any;
-            const addr: string = typeof res === 'string' ? res : (res?.address || res?.publicKey || '');
-            if (addr && addr.length >= 50) return addr;
-          } catch (err: any) {
-            if (err?.message === 'TIMEOUT') throw new Error('Wallet unlock timed out. Please unlock Freighter and try again.');
-          }
-        }
-
-        try {
-          await withTimeout(setAllowed() as Promise<any>, 4000).catch(() => null);
-        } catch {
-          // continue
-        }
-
-        const [accessRes, addrRes] = await Promise.allSettled([
-          withTimeout(requestAccess() as Promise<any>, 7000, 'TIMEOUT'),
-          withTimeout(getAddress() as Promise<any>, 7000, 'TIMEOUT'),
-        ]);
-
-        const addrValue = addrRes.status === 'fulfilled' ? addrRes.value : null;
-        const accessValue = accessRes.status === 'fulfilled' ? accessRes.value : null;
-
-        return (
-          (typeof addrValue === 'string' ? addrValue : addrValue?.address) ||
-          (accessValue as any)?.address ||
-          ''
-        );
-      };
-
-      const address = await requestWithTimeout();
-
-      if (!address || address.length < 50) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          isFreighterInstalled: true,
-          error: 'Access denied or wallet locked. Please unlock Freighter and approve the connection.',
-        }));
-        showToast('Freighter access denied or wallet locked.', 'error');
-        return;
-      }
-
-      const [netCheck, balances] = await Promise.all([
-        verifyNetwork(),
-        fetchBalances(address),
-      ]);
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY_CONNECTED, 'true');
-      }
-
-      setState(prev => ({
-        ...prev,
-        isConnected: true,
-        publicKey: address,
-        shortAddress: formatShortAddress(address),
-        walletName: 'Freighter Wallet',
-        isLoading: false,
-        isFreighterInstalled: true,
-        isWrongNetwork: netCheck.isWrong,
-        networkError: netCheck.errMsg,
-        network: netCheck.netName,
-        balance: balances.balance,
-        usdcBalance: balances.usdcBalance,
-        error: null,
-      }));
-
-      if (netCheck.isWrong) {
-        showToast('⚠️ Please switch Freighter to Stellar Testnet', 'error');
-      } else {
-        showToast(`✅ Connected: ${formatShortAddress(address)}`);
-      }
-    } catch (e: any) {
-      console.error('Wallet connect error:', e);
-      const errMsg: string = e?.message || 'Failed to connect Freighter wallet';
-      setState(prev => ({ ...prev, isLoading: false, error: errMsg }));
-
-      const isNotFound =
-        errMsg.toLowerCase().includes('not found') ||
-        errMsg.toLowerCase().includes('not installed') ||
-        errMsg.toLowerCase().includes('not detected') ||
-        errMsg.toLowerCase().includes('freighter_not_found');
-
-      if (isNotFound) {
-        setInstallModalError(errMsg);
-        setShowInstallModal(true);
-      } else {
-        showToast(errMsg, 'error');
-      }
-    }
-  }, [state.isLoading, verifyNetwork, fetchBalances, showToast]);
-
-  // ── MOBILE CONNECT FLOW (Dedicated Mobile Provider logic per official SDF specs) ──
-  const connectMobile = useCallback(async () => {
+  // ── MOBILE CONNECT FLOW — Strictly follows official SDF specs for in-app mobile dApp browsers ──
+  const connect = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     setMobileModalError(null);
 
-    const isInstalled = await detectFreighter();
+    const isInstalled = await detectFreighterMobile();
 
     if (!isInstalled) {
       setState(prev => ({
@@ -379,15 +255,6 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
   }, [verifyNetwork, fetchBalances, showToast]);
 
-  // ── DEVICE ROUTER ──
-  const connect = useCallback(async () => {
-    if (isMobileDevice()) {
-      await connectMobile();
-    } else {
-      await connectDesktop();
-    }
-  }, [connectMobile, connectDesktop]);
-
   const disconnect = useCallback(async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY_CONNECTED);
@@ -451,14 +318,14 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
   }, [state.publicKey, refresh, showToast]);
 
-  // Auto Reconnect on Load
+  // Auto reconnect inside Mobile dApp Browser
   useEffect(() => {
     const initWallet = async () => {
       const isSaved = typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY_CONNECTED) === 'true';
       if (!isSaved) return;
 
       try {
-        const installed = await detectFreighter();
+        const installed = await detectFreighterMobile();
         if (!installed) {
           localStorage.removeItem(STORAGE_KEY_CONNECTED);
           return;
@@ -476,6 +343,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
             isConnected: true,
             publicKey: addr,
             shortAddress: formatShortAddress(addr),
+            walletName: 'Freighter Mobile',
             isFreighterInstalled: true,
             isWrongNetwork: netCheck.isWrong,
             networkError: netCheck.errMsg,
@@ -505,26 +373,17 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     >
       {children}
 
-      {/* Desktop Install Modal */}
-      <InstallWalletModal
-        isOpen={showInstallModal}
-        onClose={() => { setShowInstallModal(false); setInstallModalError(null); }}
-        errorMessage={installModalError}
-      />
-
-      {/* Mobile Guidance Modal */}
       <MobileGuidanceModal
         isOpen={showMobileModal}
         step={mobileModalStep}
         errorMessage={mobileModalError}
         onClose={() => setShowMobileModal(false)}
-        onRetry={connectMobile}
+        onRetry={connect}
         onDownloadFreighter={() => {
           window.open('https://www.freighter.app', '_blank', 'noopener,noreferrer');
         }}
       />
 
-      {/* Toast Notification */}
       {toastMessage && (
         <div
           style={{
