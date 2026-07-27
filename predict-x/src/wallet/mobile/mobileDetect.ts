@@ -78,29 +78,39 @@ export function clearMobileAppState(): void {
   }
 }
 
-/** Open the installed Freighter Mobile app on iOS / Android via deep link / universal link */
-export function openFreighterMobileApp(): void {
-  if (typeof window === 'undefined') return;
+/** Safely open the Freighter Mobile app on iOS / Android via deep link without triggering a 404 web error */
+export function openFreighterMobileApp(): boolean {
+  if (typeof window === 'undefined') return false;
 
   const currentUrl = encodeURIComponent(window.location.href);
-  const rawUrl = window.location.href;
-
-  // Universal Link schema used by Freighter Mobile
-  const universalLink = `https://freighter.app/dapp/${encodeURIComponent(rawUrl)}`;
-  // Deep link schema fallback
   const deepLink = `freighter://dapp?url=${currentUrl}`;
 
-  // Attempt to open the Freighter app via deep link or universal link
   try {
-    window.location.href = deepLink;
-  } catch (e) {
-    window.open(universalLink, '_blank', 'noopener,noreferrer');
-  }
+    // Hidden anchor tag launch
+    const a = document.createElement('a');
+    a.href = deepLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 500);
 
-  // Fallback to universal link after brief delay if deep link was blocked
-  setTimeout(() => {
-    if (!document.hidden) {
-      window.location.href = universalLink;
-    }
-  }, 400);
+    return true;
+  } catch (e) {
+    console.warn('Deep link launch error:', e);
+    return false;
+  }
+}
+
+/** Copy current page URL for pasting into Freighter Mobile Browser */
+export function copySiteUrlForFreighter(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    return true;
+  } catch {
+    return false;
+  }
 }
