@@ -712,12 +712,29 @@ footer { background: #fff; color: var(--ink); padding: 80px 56px 40px; }
    Rule: Desktop (1024px+) untouched. Only affect ≤768px.
 ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Landing nav */
+  /* Landing nav: tighter padding on tablet */
   #mainnav {
-    padding: 12px 20px !important;
+    padding: 12px 16px !important;
+    gap: 8px !important;
   }
   #mainnav.scrolled {
-    padding: 10px 20px !important;
+    padding: 10px 16px !important;
+  }
+
+  /* Hide nav text links on mobile — hamburger handles navigation */
+  #mainnav .nav-links {
+    display: none !important;
+  }
+
+  /* Wordmark: slightly smaller on tablet */
+  #mainnav .landing-wordmark {
+    font-size: 18px !important;
+  }
+
+  /* Launch app button: compact on tablet */
+  #mainnav .nav-launch-btn {
+    padding: 7px 14px !important;
+    font-size: 12px !important;
   }
 
   /* Landing hero: hide phone mockup, show text only on tablet */
@@ -831,9 +848,21 @@ footer { background: #fff; color: var(--ink); padding: 80px 56px 40px; }
    Target: most smartphones in landscape / larger phones
 ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* Landing nav: tighter */
+  /* Landing nav: ultra-compact on phones */
   #mainnav {
-    padding: 10px 16px !important;
+    padding: 10px 14px !important;
+    gap: 6px !important;
+  }
+
+  /* Wordmark: smaller on phones */
+  #mainnav .landing-wordmark {
+    font-size: 16px !important;
+  }
+
+  /* Launch button: compact text on phones */
+  #mainnav .nav-launch-btn {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
   }
 
   /* Hero: reduce padding more */
@@ -971,6 +1000,23 @@ footer { background: #fff; color: var(--ink); padding: 80px 56px 40px; }
   /* Product section cards: contain overflow */
   .prod-layout > div:last-child {
     overflow: hidden !important;
+  }
+
+  /* Landing nav: minimum padding on tiny phones */
+  #mainnav {
+    padding: 10px 12px !important;
+    gap: 4px !important;
+  }
+
+  /* Hide "PredictX" wordmark text on 375px — only show icon to avoid overflow */
+  #mainnav .landing-wordmark {
+    display: none !important;
+  }
+
+  /* Extra-compact launch button */
+  #mainnav .nav-launch-btn {
+    padding: 7px 10px !important;
+    font-size: 11.5px !important;
   }
 }
 

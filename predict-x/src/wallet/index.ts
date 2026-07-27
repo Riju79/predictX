@@ -6,3 +6,4 @@ export * from './useWallet';
 export * from './components/ConnectWalletButton';
 export * from './components/WalletDropdown';
 export * from './components/WalletModal';
+export * from './components/InstallWalletModal';

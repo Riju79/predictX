@@ -20,9 +20,54 @@ import {
   fundAccountWithFriendbot,
 } from './walletHelpers';
 import { getTokenClient, fromRawAmount } from '@/src/config/stellar';
+import { InstallWalletModal } from './components/InstallWalletModal';
 
 interface WalletProviderProps {
   children: ReactNode;
+}
+
+/** Race a promise against a timeout — rejects with timeoutError if too slow. */
+function withTimeout<T>(promise: Promise<T>, ms: number, timeoutError?: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(timeoutError || `Operation timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+/** Safely check whether the Freighter extension is present and responsive.
+ *  Returns true only if window.freighterApi is injected OR freighterIsConnected
+ *  responds (with any truthy/falsy value) within 2 seconds.
+ *  Returns false if the window postMessage loop is silent (extension absent). */
+async function detectFreighter(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const win = window as any;
+
+  // Fastest check: look for the injected script API object
+  if (win.freighterApi && (
+    typeof win.freighterApi.requestAccess === 'function' ||
+    typeof win.freighterApi.isConnected === 'function' ||
+    typeof win.freighterApi.getAddress === 'function'
+  )) {
+    return true;
+  }
+
+  // Fallback: try isConnected() with a hard 2s timeout
+  try {
+    const res = await withTimeout(
+      freighterIsConnected() as Promise<any>,
+      2000,
+      'FREIGHTER_NOT_FOUND'
+    );
+    // freighterIsConnected may return boolean or object { isConnected: boolean }
+    if (typeof res === 'boolean') return res;
+    if (res && typeof res.isConnected === 'boolean') return res.isConnected;
+    if (res && typeof res.result === 'boolean') return res.result;
+    return Boolean(res);
+  } catch {
+    return false; // timed-out → extension absent
+  }
 }
 
 export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
@@ -44,10 +89,12 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   });
 
   const [toastMessage, setToastMessage] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installModalError, setInstallModalError] = useState<string | null>(null);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ msg, type });
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   }, []);
 
   // Fetch balance from Horizon Testnet API & Soroban Token Contract
@@ -59,9 +106,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       if (res.ok) {
         const data = await res.json();
         const native = data.balances?.find((b: any) => b.asset_type === 'native');
-        if (native) {
-          nativeBal = parseFloat(native.balance);
-        }
+        if (native) nativeBal = parseFloat(native.balance);
       }
     } catch (e) {
       console.info('Horizon balance fetch notice:', e);
@@ -84,7 +129,6 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     return { balance: nativeBal, usdcBalance: parseFloat((nativeBal * 0.12).toFixed(2)) };
   }, []);
 
-
   // Verify network configuration
   const verifyNetwork = useCallback(async (): Promise<{ isWrong: boolean; errMsg: string | null; netName: string }> => {
     try {
@@ -92,69 +136,109 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       let netName = 'TESTNET';
 
       try {
-        const details = await getNetworkDetails();
+        const details = await withTimeout(getNetworkDetails() as Promise<any>, 4000);
         if (details) {
           passphrase = details.networkPassphrase || '';
           netName = details.network || 'TESTNET';
         }
-      } catch (err) {
-        const netRes = await getNetwork();
-        netName = typeof netRes === 'string' ? netRes : 'TESTNET';
+      } catch {
+        try {
+          const netRes = await withTimeout(getNetwork() as Promise<any>, 3000);
+          netName = typeof netRes === 'string' ? netRes : 'TESTNET';
+        } catch {
+          netName = 'TESTNET';
+        }
       }
 
       if (passphrase && !isTestnetNetwork(passphrase)) {
-        const err = 'Please switch Freighter to Stellar Testnet.';
-        return { isWrong: true, errMsg: err, netName };
+        return { isWrong: true, errMsg: 'Please switch Freighter to Stellar Testnet.', netName };
       }
-
       return { isWrong: false, errMsg: null, netName };
-    } catch (e) {
+    } catch {
       return { isWrong: false, errMsg: null, netName: 'TESTNET' };
     }
   }, []);
 
-  // Connect Wallet Action
+  // ── CONNECT — fixed: pre-checks extension presence, hard timeouts, clear UI feedback ──
   const connect = useCallback(async () => {
+    // Prevent double-click
+    if (state.isLoading) return;
+
+    // ── Step 1: detect Freighter (fast, with timeout) ──
+    const isInstalled = await detectFreighter();
+    if (!isInstalled) {
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        isFreighterInstalled: false,
+        error: 'Freighter extension not detected.',
+      }));
+      setInstallModalError(null);
+      setShowInstallModal(true);
+      return;
+    }
+
+    // ── Step 2: set loading ──
     setState(prev => ({ ...prev, isLoading: true, error: null }));
+
     try {
-      const win = typeof window !== 'undefined' ? (window as any) : {};
-      let address = '';
+      // ── Step 3: request access — hard 8s timeout so it never hangs forever ──
+      const requestWithTimeout = async (): Promise<string> => {
+        const win = window as any;
 
-      // 1. Direct window.freighterApi check
-      if (win.freighterApi && typeof win.freighterApi.requestAccess === 'function') {
-        try {
-          const res = await win.freighterApi.requestAccess();
-          address = typeof res === 'string' ? res : res?.address || res?.publicKey || '';
-        } catch (err) {
-          console.warn('win.freighterApi.requestAccess error:', err);
+        // Try window.freighterApi first (most reliable)
+        if (win.freighterApi && typeof win.freighterApi.requestAccess === 'function') {
+          try {
+            const res = await withTimeout(win.freighterApi.requestAccess(), 7000, 'TIMEOUT') as any;
+            const addr: string = typeof res === 'string' ? res : (res?.address || res?.publicKey || '');
+            if (addr && addr.length >= 50) return addr;
+          } catch (err: any) {
+            if (err?.message === 'TIMEOUT') throw new Error('Wallet unlock timed out. Please unlock Freighter and try again.');
+            // Otherwise fall through to official API
+          }
         }
-      }
 
-      // 2. Official Freighter API fallback
-      if (!address || address.length < 50) {
-        await setAllowed().catch(() => null);
-        const accessRes = await requestAccess().catch(() => null);
-        const addrRes = await getAddress().catch(() => null);
-        address = typeof addrRes === 'string' ? addrRes : addrRes?.address || (accessRes as any)?.address || '';
-      }
+        // Official Freighter API — each call individually timed out
+        try {
+          await withTimeout(setAllowed() as Promise<any>, 4000).catch(() => null);
+        } catch {
+          // setAllowed failed — continue
+        }
+
+        const [accessRes, addrRes] = await Promise.allSettled([
+          withTimeout(requestAccess() as Promise<any>, 7000, 'TIMEOUT'),
+          withTimeout(getAddress() as Promise<any>, 7000, 'TIMEOUT'),
+        ]);
+
+        const addrValue = addrRes.status === 'fulfilled' ? addrRes.value : null;
+        const accessValue = accessRes.status === 'fulfilled' ? accessRes.value : null;
+
+        return (
+          (typeof addrValue === 'string' ? addrValue : addrValue?.address) ||
+          (accessValue as any)?.address ||
+          ''
+        );
+      };
+
+      const address = await requestWithTimeout();
 
       if (!address || address.length < 50) {
+        // Extension is installed but user denied access or wallet is locked
         setState(prev => ({
           ...prev,
           isLoading: false,
-          isFreighterInstalled: false,
-          error: 'Freighter extension not found. Please install Freighter from https://www.freighter.app',
+          isFreighterInstalled: true,
+          error: 'Access denied or wallet locked. Please unlock Freighter and approve the connection.',
         }));
-        showToast('Freighter wallet extension not found.', 'error');
-        if (typeof window !== 'undefined') {
-          window.open('https://www.freighter.app', '_blank');
-        }
+        showToast('Freighter access denied or wallet locked.', 'error');
         return;
       }
 
-      // Validate Network
-      const netCheck = await verifyNetwork();
-      const balances = await fetchBalances(address);
+      // ── Step 4: verify network + balances ──
+      const [netCheck, balances] = await Promise.all([
+        verifyNetwork(),
+        fetchBalances(address),
+      ]);
 
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEY_CONNECTED, 'true');
@@ -179,17 +263,30 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       if (netCheck.isWrong) {
         showToast('⚠️ Please switch Freighter to Stellar Testnet', 'error');
       } else {
-        showToast(`✅ Connected Freighter: ${formatShortAddress(address)}`);
+        showToast(`✅ Connected: ${formatShortAddress(address)}`);
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error('Wallet connect error:', e);
-      const errMsg = e instanceof Error ? e.message : 'Failed to connect Freighter wallet';
+      const errMsg: string = e?.message || 'Failed to connect Freighter wallet';
       setState(prev => ({ ...prev, isLoading: false, error: errMsg }));
-      showToast(errMsg, 'error');
-    }
-  }, [verifyNetwork, fetchBalances, showToast]);
 
-  // Disconnect Wallet Action
+      // If the error indicates the extension is missing, show the install modal
+      const isNotFound =
+        errMsg.toLowerCase().includes('not found') ||
+        errMsg.toLowerCase().includes('not installed') ||
+        errMsg.toLowerCase().includes('not detected') ||
+        errMsg.toLowerCase().includes('freighter_not_found');
+
+      if (isNotFound) {
+        setInstallModalError(errMsg);
+        setShowInstallModal(true);
+      } else {
+        showToast(errMsg, 'error');
+      }
+    }
+  }, [state.isLoading, verifyNetwork, fetchBalances, showToast]);
+
+  // Disconnect Wallet
   const disconnect = useCallback(async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY_CONNECTED);
@@ -209,12 +306,14 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     showToast('🔌 Wallet Disconnected');
   }, [showToast]);
 
-  // Refresh Wallet Action
+  // Refresh Wallet
   const refresh = useCallback(async () => {
     if (!state.publicKey) return;
     setState(prev => ({ ...prev, isLoading: true }));
-    const netCheck = await verifyNetwork();
-    const balances = await fetchBalances(state.publicKey);
+    const [netCheck, balances] = await Promise.all([
+      verifyNetwork(),
+      fetchBalances(state.publicKey),
+    ]);
     setState(prev => ({
       ...prev,
       isLoading: false,
@@ -230,7 +329,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const copyAddress = useCallback(() => {
     if (!state.publicKey) return;
     navigator.clipboard.writeText(state.publicKey);
-    showToast('📋 Public Address Copied to Clipboard!');
+    showToast('📋 Public Address Copied!');
   }, [state.publicKey, showToast]);
 
   // Open Explorer
@@ -239,12 +338,9 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     window.open(getStellarExpertAccountUrl(state.publicKey), '_blank');
   }, [state.publicKey]);
 
-  // Fund Account via Friendbot Faucet
+  // Fund Account via Friendbot
   const fundAccount = useCallback(async () => {
-    if (!state.publicKey) {
-      showToast('No wallet connected to fund', 'error');
-      return;
-    }
+    if (!state.publicKey) { showToast('No wallet connected to fund', 'error'); return; }
     setState(prev => ({ ...prev, isFunding: true }));
     showToast('⏳ Requesting 10,000 XLM from Stellar Testnet Friendbot...');
     const res = await fundAccountWithFriendbot(state.publicKey);
@@ -257,34 +353,38 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
   }, [state.publicKey, refresh, showToast]);
 
-  // Auto Reconnect on Page Load
+  // Auto Reconnect on Page Load — also with timeout so it never hangs
   useEffect(() => {
     const initWallet = async () => {
       const isSaved = typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY_CONNECTED) === 'true';
       if (!isSaved) return;
 
       try {
-        const connRes = await freighterIsConnected().catch(() => null);
-        const installed = typeof connRes === 'boolean' ? connRes : Boolean(connRes && (connRes.isConnected || (connRes as any).result));
+        const installed = await detectFreighter();
+        if (!installed) {
+          // Extension gone — clear saved state silently
+          localStorage.removeItem(STORAGE_KEY_CONNECTED);
+          return;
+        }
 
-        if (installed) {
-          const addrRes = await getAddress().catch(() => null);
-          const addr = typeof addrRes === 'string' ? addrRes : addrRes?.address;
-          if (addr && addr.length >= 50) {
-            const netCheck = await verifyNetwork();
-            const balances = await fetchBalances(addr);
-            setState(prev => ({
-              ...prev,
-              isConnected: true,
-              publicKey: addr,
-              shortAddress: formatShortAddress(addr),
-              isFreighterInstalled: true,
-              isWrongNetwork: netCheck.isWrong,
-              networkError: netCheck.errMsg,
-              balance: balances.balance,
-              usdcBalance: balances.usdcBalance,
-            }));
-          }
+        const addrRes = await withTimeout(getAddress() as Promise<any>, 4000).catch(() => null);
+        const addr = typeof addrRes === 'string' ? addrRes : addrRes?.address;
+        if (addr && addr.length >= 50) {
+          const [netCheck, balances] = await Promise.all([
+            verifyNetwork(),
+            fetchBalances(addr),
+          ]);
+          setState(prev => ({
+            ...prev,
+            isConnected: true,
+            publicKey: addr,
+            shortAddress: formatShortAddress(addr),
+            isFreighterInstalled: true,
+            isWrongNetwork: netCheck.isWrong,
+            networkError: netCheck.errMsg,
+            balance: balances.balance,
+            usdcBalance: balances.usdcBalance,
+          }));
         }
       } catch (e) {
         console.warn('Auto reconnect check error:', e);
@@ -299,12 +399,13 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     if (!state.isConnected) return;
     const interval = setInterval(async () => {
       try {
-        const addrRes = await getAddress().catch(() => null);
+        const addrRes = await withTimeout(getAddress() as Promise<any>, 3000).catch(() => null);
         const currentAddr = typeof addrRes === 'string' ? addrRes : addrRes?.address;
-
         if (currentAddr && currentAddr !== state.publicKey) {
-          const netCheck = await verifyNetwork();
-          const balances = await fetchBalances(currentAddr);
+          const [netCheck, balances] = await Promise.all([
+            verifyNetwork(),
+            fetchBalances(currentAddr),
+          ]);
           setState(prev => ({
             ...prev,
             publicKey: currentAddr,
@@ -316,11 +417,10 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
           }));
           showToast(`Account switched: ${formatShortAddress(currentAddr)}`);
         }
-      } catch (e) {
+      } catch {
         // silent sync
       }
-    }, 4000);
-
+    }, 5000);
     return () => clearInterval(interval);
   }, [state.isConnected, state.publicKey, verifyNetwork, fetchBalances, showToast]);
 
@@ -336,30 +436,33 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         fundAccount,
       }}
     >
-
       {children}
 
-      {/* Toast Notification Banner */}
+      {/* ── Install Freighter Modal ── */}
+      <InstallWalletModal
+        isOpen={showInstallModal}
+        onClose={() => { setShowInstallModal(false); setInstallModalError(null); }}
+        errorMessage={installModalError}
+      />
+
+      {/* ── Toast Notification ── */}
       {toastMessage && (
         <div
           style={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
-            zIndex: 9999,
+            bottom: 24, right: 24,
+            zIndex: 99997,
             background: toastMessage.type === 'error' ? '#7F1D1D' : '#064E3B',
             border: `1px solid ${toastMessage.type === 'error' ? '#EF4444' : '#10B981'}`,
             color: '#FFFFFF',
             borderRadius: 10,
             padding: '10px 18px',
-            fontSize: 13,
-            fontWeight: 600,
+            fontSize: 13, fontWeight: 600,
             fontFamily: 'Inter, sans-serif',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
+            display: 'flex', alignItems: 'center', gap: 8,
             animation: 'fadeInUp 0.2s ease forwards',
+            maxWidth: 'calc(100vw - 48px)',
           }}
         >
           {toastMessage.msg}

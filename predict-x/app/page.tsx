@@ -551,66 +551,65 @@ export default function Home() {
       {/* ── NAV ── */}
       <nav id="mainnav" className={scrolled ? 'scrolled' : ''} style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
+        top: 0, left: 0, right: 0,
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '24px 56px',
-        background: scrolled ? 'rgba(0,0,0,0.85)' : 'transparent',
+        padding: '20px 40px',
+        background: scrolled ? 'rgba(0,0,0,0.88)' : 'transparent',
         backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        transition: 'all 0.3s ease'
+        WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
+        transition: 'all 0.3s ease',
+        gap: 12,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          {/* Hamburger Menu Toggle Icon (two horizontal white bars) */}
-          <div 
+        {/* LEFT: Hamburger + nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: '1 1 0', minWidth: 0 }}>
+          {/* Hamburger */}
+          <div
             onClick={() => setSideNavOpen(true)}
             title="Open Menu"
-            style={{ display: 'flex', flexDirection: 'column', gap: '5.5px', cursor: 'pointer', padding: '4px' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '5.5px', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
           >
-            <div style={{ width: '24px', height: '2.5px', background: '#ffffff', borderRadius: '2px' }} />
-            <div style={{ width: '24px', height: '2.5px', background: '#ffffff', borderRadius: '2px' }} />
+            <div style={{ width: '22px', height: '2px', background: '#ffffff', borderRadius: '2px' }} />
+            <div style={{ width: '22px', height: '2px', background: '#ffffff', borderRadius: '2px' }} />
           </div>
 
-          {/* Left Navigation Links */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <a href="#hero" style={{ color: '#ffffff', textDecoration: 'none', fontSize: '15px', fontWeight: 500 }}>Home</a>
-            <a href="#funded" style={{ color: '#ffffff', textDecoration: 'none', fontSize: '15px', fontWeight: 500 }}>Sports</a>
+          {/* Nav links — hidden on mobile via CSS */}
+          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <a href="#hero" style={{ color: '#ffffff', textDecoration: 'none', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>Home</a>
+            <a href="#funded" style={{ color: '#ffffff', textDecoration: 'none', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>Sports</a>
           </div>
         </div>
 
-        {/* Centered App Logo in Top Middle of Hero Section */}
+        {/* CENTER: Logo — always centered with flex, no absolute positioning */}
         <div style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          cursor: 'pointer'
+          display: 'flex', alignItems: 'center', gap: '8px',
+          cursor: 'pointer', flexShrink: 0,
         }}>
-          <img src="/logo.png" alt="PredictX Logo" style={{ width: '34px', height: '34px', objectFit: 'contain' }} />
-          <span style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>PredictX</span>
+          <img src="/logo.png" alt="PredictX Logo" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+          <span className="landing-wordmark" style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>PredictX</span>
         </div>
 
-        {/* Top Right Launch App Button (Cool Whitish/Bluish Sheen) */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Link 
+        {/* RIGHT: Launch App button */}
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 0', justifyContent: 'flex-end', minWidth: 0 }}>
+          <Link
             href="/app"
+            className="nav-launch-btn"
             style={{
               textDecoration: 'none',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 700,
-              padding: '9px 24px',
+              padding: '8px 18px',
               borderRadius: '9999px',
               background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 55%, #c7d2fe 100%)',
               border: '1px solid #ffffff',
               color: '#090714',
-              boxShadow: '0 0 25px rgba(199, 210, 254, 0.45), 0 4px 15px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 0 20px rgba(199, 210, 254, 0.4), 0 4px 12px rgba(0, 0, 0, 0.4)',
               transition: 'all 0.25s ease',
-              letterSpacing: '-0.2px'
+              letterSpacing: '-0.2px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
             Launch App ➔
