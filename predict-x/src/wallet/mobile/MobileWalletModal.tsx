@@ -24,11 +24,14 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const handleOpenApp = () => {
+    openFreighterMobileApp();
+  };
+
   const handleDownload = () => {
     if (onDownloadFreighter) {
       onDownloadFreighter();
     } else {
-      openFreighterMobileApp();
       window.open('https://www.freighter.app', '_blank', 'noopener,noreferrer');
     }
   };
@@ -58,36 +61,36 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
           transform: 'translate(-50%, -50%)',
           zIndex: 99999,
           width: 'calc(100vw - 32px)',
-          maxWidth: 380,
+          maxWidth: 390,
           background: 'linear-gradient(165deg, #0E121B 0%, #080A10 100%)',
           border: '1px solid rgba(99, 102, 241, 0.35)',
           borderRadius: 22,
-          padding: '30px 24px 24px',
+          padding: '28px 22px 22px',
           boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 40px rgba(99,102,241,0.15)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 20,
+          gap: 18,
           textAlign: 'center',
           animation: 'modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
           fontFamily: 'Inter, sans-serif',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* ── STEP 1: NOT INSTALLED STATE (Matches prompt exact specification) ── */}
+        {/* ── STEP 1: NOT INSTALLED / LAUNCH APP STATE ── */}
         {step === 'NOT_INSTALLED' && (
           <>
             {/* Wallet Icon Badge */}
             <div
               style={{
-                width: 68,
-                height: 68,
+                width: 64,
+                height: 64,
                 borderRadius: 20,
                 background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 32,
+                fontSize: 30,
                 boxShadow: '0 10px 28px rgba(99, 102, 241, 0.45)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
               }}
@@ -96,7 +99,7 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
             </div>
 
             {/* Title & Description */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <h2
                 style={{
                   margin: 0,
@@ -111,20 +114,20 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
               <p
                 style={{
                   margin: 0,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   color: '#94A3B8',
-                  lineHeight: 1.6,
+                  lineHeight: 1.55,
                 }}
               >
                 To use PredictX on mobile, install Freighter Wallet and then return to connect your wallet.
               </p>
             </div>
 
-            {/* Action Buttons: Download Freighter, Connect Again, Cancel */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 4 }}>
-              {/* Button 1: Download Freighter */}
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 2 }}>
+              {/* Button 1: Open in Freighter App (For users with the app installed) */}
               <button
-                onClick={handleDownload}
+                onClick={handleOpenApp}
                 style={{
                   width: '100%',
                   padding: '13px',
@@ -143,13 +146,13 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <span>Download Freighter</span>
+                <span>📱 Open in Freighter App</span>
                 <span>➔</span>
               </button>
 
-              {/* Button 2: Connect Again */}
+              {/* Button 2: Download Freighter */}
               <button
-                onClick={onRetry}
+                onClick={handleDownload}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -160,23 +163,45 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   fontSize: 13.5,
                   fontWeight: 600,
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
                   transition: 'all 0.15s ease',
                 }}
               >
-                Connect Again
+                <span>Download Freighter</span>
               </button>
 
-              {/* Button 3: Cancel */}
+              {/* Button 3: Connect Again */}
               <button
-                onClick={onClose}
+                onClick={onRetry}
                 style={{
                   width: '100%',
                   padding: '10px',
                   borderRadius: 12,
                   background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#CBD5E1',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Connect Again
+              </button>
+
+              {/* Button 4: Cancel */}
+              <button
+                onClick={onClose}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: 12,
+                  background: 'transparent',
                   border: 'none',
                   color: '#64748B',
-                  fontSize: 13,
+                  fontSize: 12.5,
                   fontWeight: 500,
                   cursor: 'pointer',
                 }}
@@ -191,11 +216,11 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
         {(step === 'CONNECTING' || step === 'WAITING_APPROVAL') && (
           <>
             {/* Animated Loading Ring */}
-            <div style={{ position: 'relative', width: 72, height: 72 }}>
+            <div style={{ position: 'relative', width: 68, height: 68 }}>
               <div
                 style={{
-                  width: 72,
-                  height: 72,
+                  width: 68,
+                  height: 68,
                   borderRadius: '50%',
                   border: '3px solid rgba(99, 102, 241, 0.15)',
                   borderTopColor: '#6366F1',
@@ -209,14 +234,14 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 26,
+                  fontSize: 24,
                 }}
               >
                 ⚡
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <h2 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: '#FFFFFF' }}>
                 {step === 'CONNECTING' ? 'Connecting to Freighter...' : 'Waiting for Approval'}
               </h2>
@@ -227,23 +252,41 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
               </p>
             </div>
 
-            <button
-              onClick={onClose}
-              style={{
-                width: '100%',
-                padding: '11px',
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#94A3B8',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginTop: 6,
-              }}
-            >
-              Cancel Request
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+              <button
+                onClick={handleOpenApp}
+                style={{
+                  width: '100%',
+                  padding: '11px',
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Open Freighter App ➔
+              </button>
+
+              <button
+                onClick={onClose}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: 10,
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#94A3B8',
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel Request
+              </button>
+            </div>
           </>
         )}
 
@@ -252,32 +295,32 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
           <>
             <div
               style={{
-                width: 64,
-                height: 64,
+                width: 60,
+                height: 60,
                 borderRadius: 20,
                 background: 'rgba(239, 68, 68, 0.12)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 28,
+                fontSize: 26,
               }}
             >
               ⚠️
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <h2 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: '#FFFFFF' }}>
-                Connection Error
+                Connection Notice
               </h2>
               <p style={{ margin: 0, fontSize: 13, color: '#FCA5A5', lineHeight: 1.55 }}>
-                {errorMessage || 'Connection request failed or was rejected. Please try again.'}
+                {errorMessage || 'Connection request failed or was rejected. If you have Freighter installed, tap "Open in Freighter App".'}
               </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 4 }}>
               <button
-                onClick={onRetry}
+                onClick={handleOpenApp}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -290,6 +333,23 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                   cursor: 'pointer',
                 }}
               >
+                Open in Freighter App ➔
+              </button>
+
+              <button
+                onClick={onRetry}
+                style={{
+                  width: '100%',
+                  padding: '11px',
+                  borderRadius: 12,
+                  background: '#1E293B',
+                  border: '1px solid #334155',
+                  color: '#FFFFFF',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
                 Try Again
               </button>
 
@@ -297,12 +357,12 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
                 onClick={onClose}
                 style={{
                   width: '100%',
-                  padding: '10px',
+                  padding: '8px',
                   borderRadius: 12,
                   background: 'transparent',
                   border: 'none',
                   color: '#64748B',
-                  fontSize: 13,
+                  fontSize: 12.5,
                   fontWeight: 500,
                   cursor: 'pointer',
                 }}
@@ -318,15 +378,15 @@ export const MobileWalletModal: React.FC<MobileWalletModalProps> = ({
           <>
             <div
               style={{
-                width: 64,
-                height: 64,
+                width: 60,
+                height: 60,
                 borderRadius: 20,
                 background: 'rgba(16, 185, 129, 0.15)',
                 border: '1px solid rgba(16, 185, 129, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 28,
+                fontSize: 26,
               }}
             >
               ✅

@@ -78,24 +78,29 @@ export function clearMobileAppState(): void {
   }
 }
 
-/** Deep link helper for Freighter Mobile */
+/** Open the installed Freighter Mobile app on iOS / Android via deep link / universal link */
 export function openFreighterMobileApp(): void {
   if (typeof window === 'undefined') return;
 
   const currentUrl = encodeURIComponent(window.location.href);
-  const deepLink = `freighter://dapp?url=${currentUrl}`;
-  const universalLink = `https://freighter.app/dapp?url=${currentUrl}`;
+  const rawUrl = window.location.href;
 
-  // Try deep link scheme first
+  // Universal Link schema used by Freighter Mobile
+  const universalLink = `https://freighter.app/dapp/${encodeURIComponent(rawUrl)}`;
+  // Deep link schema fallback
+  const deepLink = `freighter://dapp?url=${currentUrl}`;
+
+  // Attempt to open the Freighter app via deep link or universal link
   try {
     window.location.href = deepLink;
-  } catch {
-    // Fallback to universal link
-    window.open(universalLink, '_blank');
+  } catch (e) {
+    window.open(universalLink, '_blank', 'noopener,noreferrer');
   }
 
-  // Fallback timer if deep link is not handled
+  // Fallback to universal link after brief delay if deep link was blocked
   setTimeout(() => {
-    if (document.hidden) return; // app successfully opened
-  }, 2000);
+    if (!document.hidden) {
+      window.location.href = universalLink;
+    }
+  }, 400);
 }
