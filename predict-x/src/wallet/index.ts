@@ -7,3 +7,5 @@ export * from './components/ConnectWalletButton';
 export * from './components/WalletDropdown';
 export * from './components/WalletModal';
 export * from './components/InstallWalletModal';
+export * from './mobile/mobileDetect';
+export * from './mobile/MobileWalletModal';
