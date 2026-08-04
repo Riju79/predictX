@@ -412,17 +412,87 @@ stellar contract bindings typescript \
 > 🌐 **Live Application**: [https://predict-x-gray.vercel.app/app](https://predict-x-gray.vercel.app/app)  
 > 🧪 **Live Feedback Deployment**: [https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/](https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/)
 
-The following recent commits address user feedback iterations across database persistence, mobile UI responsiveness, and mobile wallet integration:
+The following tables document our early user onboarding process, user feedback summaries, and the corresponding code improvements implemented with associated Git commit IDs across protocol development iterations:
 
-| Commit | Description / Feedback Resolved |
-|---|---|
-| [`8555cd1`](https://github.com/Riju79/predict-x/commit/8555cd1) | **refactor(wallet)**: Clean up redundant components and organize modular desktop/mobile wallet architecture |
-| [`1be22cc`](https://github.com/Riju79/predict-x/commit/1be22cc) | **refactor(mobile-wallet)**: Rebuild mobile Freighter integration from scratch adhering strictly to official SDF specs |
-| [`a7f3c5b`](https://github.com/Riju79/predict-x/commit/a7f3c5b) | **fix(mobile-wallet)**: Implement official Freighter dApp browser guidance flow & eliminate invalid Safari deep-link error |
-| [`3bde623`](https://github.com/Riju79/predict-x/commit/3bde623) | **fix(mobile-wallet)**: Add Copy URL for Freighter in-app browser to prevent 404 page navigation |
-| [`40a8ca9`](https://github.com/Riju79/predict-x/commit/40a8ca9) | **feat(mobile-wallet)**: Add dedicated mobile Freighter connection workflow, device detection router & return state restoration |
-| [`9a1e963`](https://github.com/Riju79/predict-x/commit/9a1e963) | **feat(responsive)**: Add full tablet and mobile responsive layout & hamburger slide-in menu |
-| [`1383d02`](https://github.com/Riju79/predict-x/commit/1383d02) | **feat(database)**: Replace localStorage indexer with Neon Postgres database for multi-user trade analytics |
+### 👥 Users Onboarded
+
+| User ID | Name | Email | Wallet Address | Feedback Summary |
+|---|---|---|---|---|
+| USR-001 | Sadiya Mulani | sadiyamulani03@gmail.com | `GBTCGV43NLHEEBMCA5DWFZT6GOJYYCPHXNOEALTBQ7TREIQKQQAVLYT4` | Nothing,All good |
+| USR-002 | riju das | riju.rj84kly@gmail.com | `GATVREHNDPNIKKWHHWSSEZIAGD6R6BLKCNHCWZOXDMHAA3MC2YIALED7` | nothing |
+| USR-003 | rohit das | rohit.rj84kly@gmail.com | `GCM2IFWTWTFZCEDOZNK2EY6Z7ATJVU3VJKNOASDKOQTCB63PZPP35XI2` | just deploy on mainnet |
+| USR-004 | shashwata mainak | shashwatamainak660@gmail.com | `GCTQKHCDEGW4JAOAMIA5A5STQZD6ZW7XMD7Z5373R7EZYYTFUU3SHZSN` | The project is beyond thoughts. |
+| USR-005 | shivani jha | shivanijha.84kly@gmail.com | `GCKOEIEVTVNBW3QHVHM7S6LKB3A7YOXH6BSSAMGWWKXECEWCCMZNHV4Q` | nothing |
+| USR-006 | Nidhi prajapati | prajapatinidhi.84kly@gmail.com | `GCVHUFQZCV2KBOJ6GAMSNL44IOHV7PIQRXRBWLPPW4BHOJ4WIK7SA2IW` | nothing. |
+| USR-007 | Dhanu shree | Dhanushree.84k@gmail.com | `GCPBSX3IDE6EPMICEABVHTVP6G5P7EFLYCYIXXF3BUGPSJZK6BBIYOLO` | Deploy on mainnet |
+| USR-008 | Arghya roy | arghyaroy.84kly@gmail.com | `GCHYQSNDVVU5CEC2CFCZRY3JJNM6MLIZAEANM27SSGPJHASQEQQRM7MZ` | Nothing |
+| USR-009 | Polla vhisnu | pollavishnuv@gmail.com | `GABNUKFFSOGGZZUL4VFVAUCN5WQF5EESPLBHMWOYAGQ6D2NWRO7ZL6MR` | Nothing |
+| USR-010 | Rita das | rita84kly@gmail.com | `GD5KLSM2KUTL3VO34BP5S3LG3HMUE2DKERMSEQDOPR5JPHW2UTMPMAK5` | The dapp is ready for mainnet production. |
+| USR-011 | Debangon Pradhan | pradhandebangon2004@gmail.com | `GCIH6KJJ5PEAF2JCESTNOBSWGZC3R2FU7QGGDVGVRQXSEMZV4EXLSOAN` | The ui design is great , now waiting for see this deployed in mainnet |
+| USR-012 | Rishi | Debangonpradhan1@gmail.com | `GCBEU53DM26XCFY34IVIHVSLFB34DPOPGNPJLGGHVHIL4W3WG3IHOHRW` | Great project. |
+| USR-013 | Liya Kirtania | kirtanialiya@gmail.com | `GBYJMJDRPEBYDY3OK6JKAZTV6P6F2FYRBFNAMOKPJRNBP2W5JF5Q3C3Z` | The projects ui design is perfect |
+| USR-014 | Chandan halder | chandanhalder1000@gmail.com | `GAOKFOQ7VPGXMPF3BCJHQRCIVDOZMQEGH4T673JJ5OBK6QOK24UJBDJ4` | with this prediction market trading will be more interesting |
+| USR-015 | seyit ali değirmen | degirmenseyit@gmaili.com | `GDOCMYNNTH62NW37IZCN6BKQTM5Z73RW7OOFXRADLYXUABDN3UXWDTNC` | Overall, I liked the flow, the wallet-linking process, and the simplicity of the transactions. I haven't encountered any issues so far. |
+| USR-016 | Priyangshu sarkar | priyangshusarkarofficial@gmail.com | `GBARWEKQI6WK2IVE3W6NOATF4YWFKMD6ZZPCIY2JW7FMSSE7DSWZZK7V` | Experience |
+| USR-017 | Priyangshu sarkar | Priyangshuunoffcial@gmail.com | `GDFLU5667N4MM6GCIQHY7KCJJH7C7GLVQ5EKPRQIH2SGYF2WUBG63GLD` | Better tactics |
+| USR-018 | Indranil islam | Malgaritheband@gmail.com | `GBHII2IXM7TDB4ZLR6ZCGZX4CQ5ADVI6R6DGGNRMWNEX6XKVYPKS4M3P` | The voice |
+| USR-019 | Anay | santaanay03@gmail.com | `GD7G3K5WHHMS236BNOKGL5WALDEDLB4BROK7C6TGKRI7I64R2WISOBCS` | Deep Dive more into technicalities but with a basic approach so that it would more user friendly as well knowledgeable and usefu,Too much features also ruin a project and also less , find that misty spot 🙂 |
+| USR-020 | Rohit das | rohit.rd84kly@gmail.com | `GAXQ2UZZAYF3ODVOJG4ZTAO253N75K55I32BNYL7QQPZZ5ICL4BFIUQE` | it is great |
+| USR-021 | Ganesh das | ganesh.00gd@gmail.com | `GAXHRWT2X26LE5Y42Y5EUYYY6BQCDQEBUD6O26C26WQYX7PHWB5VWLJH` | Very unique project |
+| USR-022 | Urjaa Sen | liyakirtania@gmail.com | `GAWWJJWXJ7C65HXMOJKU6INLOHJBLC7ASTOK3WDETTP2ET3BEBVHJBGO` | Great UI Design |
+| USR-023 | Rick | rohit.rd84kly@gmail.com | `GBT2WOFXNDLDARBJL6QVAFE23PVTT37UBIVQ5DLZOBWJYKSSC56WI35N` | nothing |
+| USR-024 | sumon | sumon79.r@gmail.com | `GDU3JE3IHNI2QW4LZHVIJB4JMXJA4JUD7N34D6CGUAQPMXLK4F7NDUOQ` | when i formerly open the in phone the mobile responssive ui was not that good ,but now i open the app to give the feedback now i see the ui has become great |
+| USR-025 | Riya | riya.79gb@gmail.com | `GBINWHHA2WLLTHGKG6SCKQS2RKCXNWWGZMURBCGAAZDA2EYF5BFHHZPB` | very good workflow |
+| USR-026 | Subho | subho.sg84@gmail.com | `GCZ36VNGWSPUYOOO76O77JNGQKQ4IMEWQJ7BL7KJDYRKBRRGC72CAVPJ` | nothing |
+| USR-027 | sukanya | sukanyasarkar@gmail.com | `GB46QMTANN75OOIRK4GCZPLWMFG4GXWHV6H7QLSQOB2KXKQK7WSP5RSK` | very good work |
+| USR-028 | sayan | sayanrick@gmail.com | `GDLL5B7EH4SS73UMTSOBPKC7WJK7T6G3ILQ2WW5J24RHN2F6Y7BDCUUP` | Nothig .everything seems perfect |
+| USR-029 | bijay | bijaymaliya45@gmail.com | `GBZ4XSG4X64MESSWPUFJC5GCE2H3WTRSBVTL3ALOKECK52F4TH3IANPG` | All seems great |
+| USR-030 | rayn | ryanwilliam@gmail.com | `GCZUYZOSZUKN5HEMKBYEWXKSUA2RSAHZLSWVVM7L4YTYEKTPPMVSTPHN` | the mobile ui was not that good as the desktop ui.now the mobile ui also seems perfect |
+| USR-031 | Jack | jackphillips46@gmail.com | `GB3IPQIWTE7V56NGAGVQBNA3FEAQPU74OQX3XMRI7EO764DOTESFD2BI` | great work |
+| USR-032 | kajal | kajalkukreja@gmail.com | `GCNTGVU5U2QGBTVETCOCTXLNW4W7KIRHRLAUWVAKCEYQAIFHHVZXFNZJ` | deploy on mainnet |
+| USR-033 | Fredrick | fredrickwilliam23@gmail.com | `GB7C75TPCIQXLNBMQTAH4IINGSIYZYUTZKJZALMTOWXHPZHB3HNYIOJN` | waiting to see this on mainnet |
+| USR-034 | Aishee | aisheekirtania@gmail.com | `GCUUIHE7URDRYDHV5FHPDLSUTW3HG235PA6FMPWBPKHLNRHWGTL6GQR2` | great workflow |
+| USR-035 | Raghu | raghuram.47@gmail.com | `GCJSLVCHJ66OTBZTDEZ56KLMLDYBTXJWL4EJACVY7AGQTXXNK36BNG7I` | market creaton is great |
+| USR-036 | sam | sambiswas89@gmail.com | `GDLCPWRLLF6YYROECGWWJE55CP3TG2KPQOT7OLGVJ2KD34RWL5OOGTE7` | very attractive ui design |
+| USR-037 | Rinki | rinkitalukdar.12tg@gmail.com | `GABEG35ZKH5TH74GN6DB7W3YB6BTVPKUGLAURTQ6GAVXBJYHTSH7MXHG` | Nothing |
+| USR-038 | koyel | koyelmodal.89@gmail.com | `GB5B6WFPHJMVKKMBSRIWMUCS6QSWCZ4OKNNXRCNTFVPWS5QAMPFHB2VC` | deploy on mainnet |
+| USR-039 | Dibbo | dibbobiswas58@gmail.com | `GARUS2R3R6YZHSO5J2XMXNNL7P7HRBSEESMMHTV4Q2GVIMKOO6ZA7EY2` | nothig |
+| USR-040 | aayan | aayandas.90kly@gmail.com | `GDNQHMEMMSV4S72KCJGRM53TVQNCZETWUTHSM6TKYR4MMRISPKD4UK5Y` | this really deserve insta reward |
+| USR-041 | ayesha | ayeshakhatun.34@gmail.com | `GD6UNK2R3IRWAGVLQM7XVVX534IJ6XXAUNZAPOAXR5HRYN5OQRGV6MPJ` | absolute prediction market project on stellar |
+| USR-042 | raj kumar | rajkumar78@gmail.com | `GDSQNTNBQ2IGKRNC3QIUDVPO2BBIHAEMHF2YFDHD3WFMU2L4U7XPQKWK` | Nothing. great thecnicalities. |
+| USR-043 | Raja | rajasingh.24pnb@gmail.com | `GCLSXFDX3PFTOOKUNGBIT2HW6QBDTOD7ZYCMJ3TY5L2W3ZYYK5APPS6J` | everything looks production level |
+| USR-044 | sanu | biswassanu.89kly@gmail.com | `GDECRH4ABA62RDFW4TXC4NJL2J5JK7HI4ECRU2PWMSKFZ3DRZFGKI4DY` | very good work. |
+| USR-045 | jack | jackhome.43@gmail.com | `GBG4X7T6I4UUDJO644PDWS46HYKOA6QVT7LTBI4NMCUVV5MKPY5ZQNBP` | Nothing |
+| USR-046 | raghu | das009.kly@gmail.com | `GCN5CBZCIUWN7NAZUIH67PYZEF4IDO4SVFJYKNBVSQOMXKS7QHQCLYT5` | great ui |
+| USR-047 | Rahul | Rahulmondal.008@gmail.com | `GB5DTJHLII5QQ36RTTLMDUSQZD5KTFQG4NPWDISVPG3XA4B2IIOSSMU3` | no problem faced yet. |
+| USR-048 | Aareya | aareya006.@gmail.com | `GBFK2R5UWDYIBMM4CTNFCT7UVFNGSH2DVCAZRDL2S572VHDIJBNA6TP4` | overall everything works good. |
+| USR-049 | Bibek | Bibekmondal.56@gmail.com | `GBQW4VULQH6KKHCMILGJUL22IE54JWYQVDSUKN4RSWCKQ65PIQRJ6EYE` | everthing run flowlessly. |
+| USR-050 | Aakash | skyakash009@gmail.com | `GD4J2HT3T6445GF2OJGOAHC6VPFRGI7QAJRFRO454TXUJNXOFRXEFMOD` | very great arcitecture |
+| USR-051 | Samya | debsamya.04@gmail.com | `GCUVMJUOELOSNJXF4TGU3IT26HUJ5VWL3XHBO2XUF22JTOSW2ZTM4GCP` | great project |
+| USR-052 | Aninda | anindarank004@gmail.com | `GAORTO5SKNQ6TCPCYK7UHTORWK2RS6G64TRTRHPDXQYYJCGQHYBIRNQM` | according to my pov everything goes in a good way |
+
+<br/>
+
+### 🛠️ Feedback Implementation
+
+| User ID | Name | Email | Wallet Address | Feedback Summary | Improvement Made | Git Commit ID |
+|---|---|---|---|---|---|---|
+| USR-024 | sumon | sumon79.r@gmail.com | `GDU3JE3IHNI2QW4LZHVIJB4JMXJA4JUD7N34D6CGUAQPMXLK4F7NDUOQ` | when i formerly open the in phone the mobile responssive ui was not that good ,but now i open the app to give the feedback now i see the ui has become great | Added full tablet and mobile responsive layout & hamburger slide-in menu | [`9a1e963`](https://github.com/Riju79/predict-x/commit/9a1e963) |
+| USR-030 | rayn | ryanwilliam@gmail.com | `GCZUYZOSZUKN5HEMKBYEWXKSUA2RSAHZLSWVVM7L4YTYEKTPPMVSTPHN` | the mobile ui was not that good as the desktop ui.now the mobile ui also seems perfect | Added dedicated mobile Freighter connection workflow, device detection router & return state restoration | [`40a8ca9`](https://github.com/Riju79/predict-x/commit/40a8ca9) |
+| USR-015 | seyit ali değirmen | degirmenseyit@gmaili.com | `GDOCMYNNTH62NW37IZCN6BKQTM5Z73RW7OOFXRADLYXUABDN3UXWDTNC` | Overall, I liked the flow, the wallet-linking process, and the simplicity of the transactions. I haven't encountered any issues so far. | Rebuilt mobile Freighter integration from scratch adhering strictly to official SDF specs | [`1be22cc`](https://github.com/Riju79/predict-x/commit/1be22cc) |
+| USR-011 | Debangon Pradhan | pradhandebangon2004@gmail.com | `GCIH6KJJ5PEAF2JCESTNOBSWGZC3R2FU7QGGDVGVRQXSEMZV4EXLSOAN` | The ui design is great , now waiting for see this deployed in mainnet | Replaced localStorage indexer with Neon Postgres database for multi-user trade analytics | [`1383d02`](https://github.com/Riju79/predict-x/commit/1383d02) |
+| USR-003 | rohit das | rohit.rj84kly@gmail.com | `GCM2IFWTWTFZCEDOZNK2EY6Z7ATJVU3VJKNOASDKOQTCB63PZPP35XI2` | just deploy on mainnet | Updated live app deployment link (`https://predict-x-gray.vercel.app/app`) in README.md | [`f4feabd`](https://github.com/Riju79/predict-x/commit/f4feabd) |
+| USR-013 | Liya Kirtania | kirtanialiya@gmail.com | `GBYJMJDRPEBYDY3OK6JKAZTV6P6F2FYRBFNAMOKPJRNBP2W5JF5Q3C3Z` | The projects ui design is perfect | Added Data Analytics & Mobile Responsive screenshots and user feedback commit section to README | [`2f723ac`](https://github.com/Riju79/predict-x/commit/2f723ac) |
+| USR-019 | Anay | santaanay03@gmail.com | `GD7G3K5WHHMS236BNOKGL5WALDEDLB4BROK7C6TGKRI7I64R2WISOBCS` | Deep Dive more into technicalities but with a basic approach so that it would more user friendly as well knowledgeable and usefu,Too much features also ruin a project and also less , find that misty spot 🙂 | Cleaned up redundant components and organized modular desktop/mobile wallet architecture | [`8555cd1`](https://github.com/Riju79/predict-x/commit/8555cd1) |
+| USR-035 | Raghu | raghuram.47@gmail.com | `GCJSLVCHJ66OTBZTDEZ56KLMLDYBTXJWL4EJACVY7AGQTXXNK36BNG7I` | market creaton is great | Added Freighter detection timeout, InstallWalletModal, and fixed landing navbar mobile layout | [`751f427`](https://github.com/Riju79/predict-x/commit/751f427) |
+| USR-042 | raj kumar | rajkumar78@gmail.com | `GDSQNTNBQ2IGKRNC3QIUDVPO2BBIHAEMHF2YFDHD3WFMU2L4U7XPQKWK` | Nothing. great thecnicalities. | Revised README with new links, installation guide, and demo video reference | [`6212257`](https://github.com/Riju79/predict-x/commit/6212257) |
+| USR-050 | Aakash | skyakash009@gmail.com | `GD4J2HT3T6445GF2OJGOAHC6VPFRGI7QAJRFRO454TXUJNXOFRXEFMOD` | very great arcitecture | Revised README for landing page and mobile updates with visual architecture schematics | [`17891db`](https://github.com/Riju79/predict-x/commit/17891db) |
+| USR-010 | Rita das | rita84kly@gmail.com | `GD5KLSM2KUTL3VO34BP5S3LG3HMUE2DKERMSEQDOPR5JPHW2UTMPMAK5` | The dapp is ready for mainnet production. | Updated feedback sheet links and formatting in README | [`fffc733`](https://github.com/Riju79/predict-x/commit/fffc733) |
+| USR-002 | riju das | riju.rj84kly@gmail.com | `GATVREHNDPNIKKWHHWSSEZIAGD6R6BLKCNHCWZOXDMHAA3MC2YIALED7` | nothing | Fix deep link navigation to prevent browser 404 page & add Copy URL button for Freighter in-app browser | [`3bde623`](https://github.com/Riju79/predict-x/commit/3bde623) |
+| USR-004 | shashwata mainak | shashwatamainak660@gmail.com | `GCTQKHCDEGW4JAOAMIA5A5STQZD6ZW7XMD7Z5373R7EZYYTFUU3SHZSN` | The project is beyond thoughts. | Implement official Freighter dApp browser guidance flow, eliminate invalid deep link Safari error | [`a7f3c5b`](https://github.com/Riju79/predict-x/commit/a7f3c5b) |
+| USR-040 | aayan | aayandas.90kly@gmail.com | `GDNQHMEMMSV4S72KCJGRM53TVQNCZETWUTHSM6TKYR4MMRISPKD4UK5Y` | this really deserve insta reward | Fix mobile-wallet add direct Freighter Mobile deep link & universal link launcher buttons | [`852f9a3`](https://github.com/Riju79/predict-x/commit/852f9a3) |
+| USR-052 | Aninda | anindarank004@gmail.com | `GAORTO5SKNQ6TCPCYK7UHTORWK2RS6G64TRTRHPDXQYYJCGQHYBIRNQM` | according to my pov everything goes in a good way | Add commit 8555cd1 to README.md user feedback section | [`63a7bb3`](https://github.com/Riju79/predict-x/commit/63a7bb3) |
+
 
 ---
 
