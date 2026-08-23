@@ -1,10 +1,12 @@
 <div align="center">
 
 <img src="https://img.shields.io/badge/Built%20on-Stellar%20Soroban-7B2FF7?style=for-the-badge&logo=stellar&logoColor=white" />
-<img src="https://img.shields.io/badge/Network-Testnet-00C6AE?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Network-Mainnet-00C6AE?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Frontend-Next.js%2016-black?style=for-the-badge&logo=nextdotjs" />
 <img src="https://img.shields.io/badge/Smart%20Contracts-Rust%20%2B%20Soroban%20SDK%2027-E57E25?style=for-the-badge&logo=rust" />
 <img src="https://img.shields.io/badge/Wallet-Freighter-6C47FF?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Twitter-@predict__x79-1DA1F2?style=for-the-badge&logo=x&logoColor=white" />
+<img src="https://img.shields.io/badge/GitHub-Riju79%2FpredictX-181717?style=for-the-badge&logo=github&logoColor=white" />
 <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
 
 <br/>
@@ -23,8 +25,7 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🌐 Live App](https://predict-x-gray.vercel.app/app) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [🔍 StellarExpert (Testnet)](https://stellar.expert/explorer/testnet) · [📄 PPT](https://predictx-presentation.vercel.app/) · [🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
-[📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251)
+[🌐 Live App](https://predict-x-gray.vercel.app/app) · [𝕏 Twitter](https://x.com/predict_x79) · [🐙 GitHub Repo](https://github.com/Riju79/predictX) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) · [🛡️ Security Audit Report](SECURITY_AUDIT.md) · [📄 PPT](https://predictx-presentation.vercel.app/) · [🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
 
 </div>
 
@@ -32,9 +33,9 @@
 
 ## 📖 Project Overview
 
-**PredictX** is a fully decentralized, production-grade prediction market protocol built natively on [Stellar Soroban](https://soroban.stellar.org/). It enables anyone to create binary or multi-outcome prediction markets on real-world events — sports, crypto prices, elections, and more — and trade outcome shares using a constant-product AMM (Automated Market Maker) with on-chain liquidity pools.
+**PredictX** is a fully decentralized, production-grade prediction market protocol built natively on [Stellar Soroban Mainnet](https://soroban.stellar.org/). It enables anyone to create binary or multi-outcome prediction markets on real-world events — sports, crypto prices, elections, and more — and trade outcome shares using a constant-product AMM (Automated Market Maker) with on-chain liquidity pools.
 
-Every trade, sell, market creation, and liquidity deposit is a **real Soroban smart contract transaction** signed by the user's Freighter wallet and confirmed on Stellar Testnet. No centralized backend, no mock data — the blockchain is the single source of truth.
+Every trade, sell, market creation, and liquidity deposit is a **real Soroban smart contract transaction** signed by the user's Freighter wallet and confirmed on Stellar Mainnet. No centralized backend, no mock data — the blockchain is the single source of truth.
 
 > 💡 **Built for the Stellar Ecosystem** — PredictX showcases the full power of Soroban's composable smart contract architecture: factory patterns, token standards, AMM math, oracle resolution, and multi-contract interactions all wired together in a single cohesive protocol.
 
@@ -50,7 +51,7 @@ Every trade, sell, market creation, and liquidity deposit is a **real Soroban sm
 | 💧 **LP Liquidity** | ✅ Live | Add/Remove XLM liquidity to market pools and earn 50% of trading fees |
 | 🏆 **Claim Winnings** | ✅ Live | Claim XLM payouts from resolved markets |
 | 🔐 **Freighter Wallet** | ✅ Live | Full wallet connect / sign / disconnect integration |
-| 🚰 **Token Minting** | ✅ Live | Mint 1,000 testnet XLM tokens via Soroban Token Contract |
+| 🚰 **Token Operations** | ✅ Live | Native Stellar Mainnet USDC / XLM asset integration |
 | 📊 **Live Charts** | ✅ Live | Real-time probability price charts with multi-series candlestick view |
 | ⚡ **Perps Terminal** | ✅ Live | Leveraged perpetual contracts on crypto price feeds |
 | 🌐 **Live Feed** | ✅ Live | Real-time event discovery feed |
@@ -82,7 +83,7 @@ Every trade, sell, market creation, and liquidity deposit is a **real Soroban sm
                  │  Stellar SDK + Freighter API
                  ▼
   ┌──────────────────────────────────────────────┐
-  │          Soroban RPC (Testnet)               │
+  │          Soroban RPC (Mainnet)               │
   │  simulate_transaction → signAndSend          │
   └──────────┬───────────────────────────────────┘
              │
@@ -99,10 +100,9 @@ Every trade, sell, market creation, and liquidity deposit is a **real Soroban sm
   │  │  resolve_market()│    └─────────────────────────────────────┘ │
   │  └──────────────────┘                                             │
   │  ┌──────────────────┐    ┌─────────────────────────────────────┐ │
-  │  │  Token Contract  │    │  AMM Contract                       │ │
-  │  │  mint() transfer │    │  Constant Product x·y = k           │ │
+  │  │    AMM Core      │───▶│  Constant-Product Pricing Engine   │ │
   │  └──────────────────┘    └─────────────────────────────────────┘ │
-  └──────────────────────────────────────────────────────────────────┘
+  └───────────────────────────────────────────────────────────────────┘
              │
   ┌──────────▼───────────────────────────────────┐
   │          Persistent Local Storage (db.ts)    │
@@ -115,7 +115,7 @@ Every trade, sell, market creation, and liquidity deposit is a **real Soroban sm
 ```
 User → Freighter Wallet Sign → Soroban RPC simulate_transaction
      ↓ [if simulation passes]
-     → signAndSend → Stellar Testnet Ledger → On-Chain State Update
+     → signAndSend → Stellar Mainnet Ledger → On-Chain State Update
      ↓
      → Read res.result (actual shares_out) → Update Local Portfolio
      → Emit StellarExpert Transaction Link
@@ -157,7 +157,7 @@ User → Freighter Wallet Sign → Soroban RPC simulate_transaction
 3. Frontend calls: marketClient.buy_shares({ user, market_id, outcome, payment })
 4. Soroban simulates transaction (pre-flight check)
 5. Freighter wallet opens → user approves
-6. Transaction broadcasts to Stellar Testnet ledger
+6. Transaction broadcasts to Stellar Mainnet ledger
 7. Contract executes AMM:
      fee = payment × protocol_fee_bps / 10000
      net_payment = payment - fee - creator_fee
@@ -245,7 +245,7 @@ Trusted oracle that calls `resolve_market()` to set the winning outcome.
 Standalone AMM module for advanced liquidity calculations.
 
 ### Token Contract
-Soroban-native token contract (SEP-41 compatible) for testnet XLM minting.
+Soroban-native token contract (SEP-41 compatible) for Mainnet USDC asset integration.
 
 ---
 
@@ -297,95 +297,77 @@ npm start
 Create `predict-x/.env.local`:
 
 ```env
-# Stellar Network
-NEXT_PUBLIC_STELLAR_NETWORK=testnet
-NEXT_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+# Stellar Network Config
+NEXT_PUBLIC_STELLAR_NETWORK=public
+NEXT_PUBLIC_SOROBAN_RPC_URL=https://mainnet.sorobanrpc.com
+NEXT_PUBLIC_HORIZON_URL=https://horizon.stellar.org
 
-# Contract Addresses (Soroban Testnet)
-NEXT_PUBLIC_MARKET_CONTRACT_ID=CAP5UKEGIW2SIUQIFR6VQ7665EHAJ4E47ORTFW52VRKBSZQYP47UFTRM
-NEXT_PUBLIC_FACTORY_CONTRACT_ID=CAH7OM5SZSFF5NJO7IMLLVI2TJKZMIE5E7ZLSILMKAMWVFMCENDKKFYQ
-NEXT_PUBLIC_TOKEN_CONTRACT_ID=CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
-NEXT_PUBLIC_ORACLE_CONTRACT_ID=CBVFQ4A4J7U2X6ZZBJE6MN5L2DJG4M7VBIG3MXV2XH4KQ2UNMNEGIGR5
-NEXT_PUBLIC_AMM_CONTRACT_ID=CCWT35G2TPYBPDIHD5A4HKY2VOORJ55JPV4YEPJRAKKJZCP7F5LOZASS
+# Deployed Smart Contract Addresses (Stellar Mainnet)
+NEXT_PUBLIC_MARKET_CONTRACT_ID=CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL
+NEXT_PUBLIC_FACTORY_CONTRACT_ID=CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL
+NEXT_PUBLIC_ORACLE_CONTRACT_ID=CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ
+NEXT_PUBLIC_AMM_CONTRACT_ID=CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO
+NEXT_PUBLIC_TOKEN_CONTRACT_ID=CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX
 ```
 
 ---
 
-## 📦 Deployment Guide
+## 📦 Mainnet Deployment Guide
 
-### Deploy Soroban Contracts to Testnet
+### Deploy Soroban Contracts to Stellar Mainnet
 
 ```bash
-# Fund deployer account on testnet
-stellar keys generate --global deployer --network testnet
-stellar keys fund deployer --network testnet
+# Build target wasm32v1-none optimized WASM binaries
+cargo build --target wasm32v1-none --release
 
-# Build optimized WASM
-cargo build --target wasm32-unknown-unknown --release
-
-# Deploy Token Contract
+# Upload & Deploy Oracle Contract
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/token.wasm \
-  --source deployer \
-  --network testnet
+  --wasm target/wasm32v1-none/release/oracle.wasm \
+  --source deployer-mainnet \
+  --network mainnet \
+  --inclusion-fee 100000
 
-# Deploy Market Contract
+# Upload & Deploy AMM Pricing Contract
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/market.wasm \
-  --source deployer \
-  --network testnet
+  --wasm target/wasm32v1-none/release/amm.wasm \
+  --source deployer-mainnet \
+  --network mainnet \
+  --inclusion-fee 100000
 
-# Deploy Factory Contract
+# Upload & Deploy Market Factory / Trading Contract
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/market_factory.wasm \
-  --source deployer \
-  --network testnet
-
-# Initialize Market Contract
-stellar contract invoke \
-  --id <MARKET_CONTRACT_ID> \
-  --source deployer \
-  --network testnet \
-  -- initialize \
-  --admin <ADMIN_ADDRESS> \
-  --token <TOKEN_CONTRACT_ID> \
-  --factory <FACTORY_CONTRACT_ID> \
-  --treasury <TREASURY_ADDRESS>
+  --wasm target/wasm32v1-none/release/market_factory.wasm \
+  --source deployer-mainnet \
+  --network mainnet \
+  --inclusion-fee 100000
 ```
 
-### Generate TypeScript Bindings
+### Generate TypeScript Client Bindings
 
 ```bash
-# Generate client bindings for Market contract
+# Generate client bindings for Market Factory contract
 stellar contract bindings typescript \
-  --contract-id <MARKET_CONTRACT_ID> \
-  --network testnet \
-  --output-dir predict-x/src/bindings/market
-
-# Generate client bindings for Factory contract
-stellar contract bindings typescript \
-  --contract-id <FACTORY_CONTRACT_ID> \
-  --network testnet \
-  --output-dir predict-x/src/bindings/market_factory
+  --contract-id CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL \
+  --network mainnet \
+  --output-dir predict-x/src/bindings/factory
 ```
 
 ---
 
-## 📍 Contract Addresses (Stellar Testnet)
+## 📍 Deployed Contract Addresses (Stellar Mainnet)
 
-| Contract | Address | Explorer |
+| Contract | Address / Contract ID | StellarExpert Mainnet Link |
 |---|---|---|
-| **Market (AMM Core)** | `CAP5UKEGIW2SIUQIFR6VQ7665EHAJ4E47ORTFW52VRKBSZQYP47UFTRM` | [View ↗](https://stellar.expert/explorer/testnet/contract/CAP5UKEGIW2SIUQIFR6VQ7665EHAJ4E47ORTFW52VRKBSZQYP47UFTRM) |
-| **Market Factory** | `CAH7OM5SZSFF5NJO7IMLLVI2TJKZMIE5E7ZLSILMKAMWVFMCENDKKFYQ` | [View ↗](https://stellar.expert/explorer/testnet/contract/CAH7OM5SZSFF5NJO7IMLLVI2TJKZMIE5E7ZLSILMKAMWVFMCENDKKFYQ) |
-| **Oracle** | `CBVFQ4A4J7U2X6ZZBJE6MN5L2DJG4M7VBIG3MXV2XH4KQ2UNMNEGIGR5` | [View ↗](https://stellar.expert/explorer/testnet/contract/CBVFQ4A4J7U2X6ZZBJE6MN5L2DJG4M7VBIG3MXV2XH4KQ2UNMNEGIGR5) |
-| **AMM** | `CCWT35G2TPYBPDIHD5A4HKY2VOORJ55JPV4YEPJRAKKJZCP7F5LOZASS` | [View ↗](https://stellar.expert/explorer/testnet/contract/CCWT35G2TPYBPDIHD5A4HKY2VOORJ55JPV4YEPJRAKKJZCP7F5LOZASS) |
-| **Token (XLM)** | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` | [View ↗](https://stellar.expert/explorer/testnet/contract/CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC) |
+| **Market Factory & Protocol State Machine** | `CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL) |
+| **AMM Pricing Contract** | `CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO) |
+| **Oracle Contract** | `CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ) |
+| **Collateral Token (USDC)** | `CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX` | Stellar Mainnet Asset |
 
 ---
 
 ## 📸 Screenshots & Architecture Visuals
 
-> *Connect your Freighter wallet, mint testnet XLM, trade perps, view on-chain Neon database analytics, and trade seamlessly on mobile!*
+> *Connect your Freighter wallet, trade on Stellar Mainnet, view perps terminal, inspect on-chain Neon database analytics, and trade seamlessly on mobile!*
 
 | 📊 Data Analytics (Neon Postgres DB) | 📱 Mobile Responsive UI |
 |:---:|:---:|
@@ -570,12 +552,43 @@ copies of the Software.
 
 ---
 
+## 📢 Product Marketing & Community Hub
+
+<div align="center">
+
+<a href="https://x.com/predict_x79">
+  <img src="https://img.shields.io/badge/Follow%20on%20Twitter-@predict__x79-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="Twitter / X Follow" />
+</a>
+<a href="https://github.com/Riju79/predictX">
+  <img src="https://img.shields.io/badge/GitHub%20Repository-Riju79%2FpredictX-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Repository" />
+</a>
+
+<br/>
+<br/>
+
+### 🌐 Join the Future of Decentralized Prediction Markets on Stellar!
+
+PredictX bridges real-world intelligence with automated market makers on Stellar Soroban Mainnet. Stay connected with our growing community and follow our latest protocol updates:
+
+| Channel | Link | Description |
+|---|---|---|
+| 𝕏 **Twitter / X Account** | [**@predict_x79**](https://x.com/predict_x79) | Official protocol announcements, mainnet updates, & market drop alerts |
+| 🐙 **GitHub Repository** | [**Riju79/predictX**](https://github.com/Riju79/predictX) | Open-source smart contract code, frontend dApp, & contribution guidelines |
+| 🌐 **Live Web Application** | [**predict-x-gray.vercel.app**](https://predict-x-gray.vercel.app/app) | Mainnet prediction trading terminal & liquidity pools |
+| 📋 **Community Feedback** | [**Google Form**](https://forms.gle/SyWZnynTtpWFPG7j8) · [**Responses Sheet**](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) | Early user onboarding & feedback portal |
+| 📽️ **Video Demonstration** | [**YouTube Demo**](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa) | Complete walkthrough of PredictX trading & AMM mechanics |
+| 📄 **Protocol Slide Deck** | [**Presentation Deck**](https://predictx-presentation.vercel.app/) | Architectural overview & tokenomics presentation |
+
+</div>
+
+---
+
 <div align="center">
 
 **Built with ❤️ on Stellar Soroban**
 
-[⭐ Star this repo](https://github.com/Riju79/predict-x) · [📋 Leave Feedback](https://forms.gle/SyWZnynTtpWFPG7j8) · [🐛 Report a Bug](https://github.com/Riju79/predict-x/issues)
+[⭐ Star this repo](https://github.com/Riju79/predictX) · [𝕏 Follow @predict_x79](https://x.com/predict_x79) · [📋 Leave Feedback](https://forms.gle/SyWZnynTtpWFPG7j8) · [🐛 Report a Bug](https://github.com/Riju79/predictX/issues)
 
-<sub>PredictX is deployed on Stellar Testnet. Not financial advice. Do not use real funds.</sub>
+<sub>PredictX is deployed live on Stellar Mainnet (Public Global Network).</sub>
 
 </div>

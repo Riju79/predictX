@@ -1,24 +1,19 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, token, Address, Env, Symbol};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Outcome {
     Yes = 0,
     No = 1,
-    OptionC = 2,
-    OptionD = 3,
-    OptionE = 4,
-    OptionF = 5,
 }
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MarketStatus {
     Open = 0,
-    Locked = 1,
-    Resolved = 2,
-    Cancelled = 3,
+    Resolved = 1,
+    Cancelled = 2,
 }
 
 #[contracttype]
@@ -29,15 +24,9 @@ pub struct MarketState {
     pub resolution_time: u64,
     pub oracle_id: Address,
     pub status: MarketStatus,
-    pub resolved: bool,
-    pub paused: bool,
     pub winning_outcome: Outcome,
     pub yes_reserves: i128,
     pub no_reserves: i128,
-    pub total_volume: i128,
-    pub total_liquidity: i128,
-    pub protocol_fee_bps: u32,
-    pub creator_fee_bps: u32,
 }
 
 #[contracttype]
@@ -47,10 +36,7 @@ pub enum DataKey {
     FactoryAddress,
     TreasuryAddress,
     Market(u64),
-    UserYesBalance(Address, u64),
-    UserNoBalance(Address, u64),
-    UserOutcomeBalance(Address, u64, u32),
-    UserTotalDeposit(Address, u64),
+    UserBal(Address, u64, u32),
     UserLP(Address, u64),
 }
 
@@ -58,30 +44,20 @@ pub enum DataKey {
 pub struct Market;
 
 fn get_user_balance(env: &Env, user: &Address, market_id: u64, outcome: Outcome) -> i128 {
-    let key = match outcome {
-        Outcome::Yes => DataKey::UserYesBalance(user.clone(), market_id),
-        Outcome::No => DataKey::UserNoBalance(user.clone(), market_id),
-        other => DataKey::UserOutcomeBalance(user.clone(), market_id, other as u32),
-    };
-    env.storage().persistent().get(&key).unwrap_or(0i128)
+    env.storage().persistent().get(&DataKey::UserBal(user.clone(), market_id, outcome as u32)).unwrap_or(0i128)
 }
 
 fn set_user_balance(env: &Env, user: &Address, market_id: u64, outcome: Outcome, balance: i128) {
-    let key = match outcome {
-        Outcome::Yes => DataKey::UserYesBalance(user.clone(), market_id),
-        Outcome::No => DataKey::UserNoBalance(user.clone(), market_id),
-        other => DataKey::UserOutcomeBalance(user.clone(), market_id, other as u32),
-    };
-    env.storage().persistent().set(&key, &balance);
+    env.storage().persistent().set(&DataKey::UserBal(user.clone(), market_id, outcome as u32), &balance);
 }
 
 fn get_user_deposit(env: &Env, user: &Address, market_id: u64) -> i128 {
-    env.storage().persistent().get(&DataKey::UserTotalDeposit(user.clone(), market_id)).unwrap_or(0i128)
+    env.storage().persistent().get(&DataKey::UserBal(user.clone(), market_id, 99u32)).unwrap_or(0i128)
 }
 
 fn add_user_deposit(env: &Env, user: &Address, market_id: u64, amount: i128) {
     let prev = get_user_deposit(env, user, market_id);
-    env.storage().persistent().set(&DataKey::UserTotalDeposit(user.clone(), market_id), &(prev + amount));
+    env.storage().persistent().set(&DataKey::UserBal(user.clone(), market_id, 99u32), &(prev + amount));
 }
 
 #[contractimpl]
@@ -89,7 +65,7 @@ impl Market {
     /// Initialize the contract with backing token, factory, treasury, and admin
     pub fn initialize(env: Env, admin: Address, token: Address, factory: Address, treasury: Address) {
         if env.storage().instance().has(&DataKey::TokenAddress) {
-            panic!("Already initialized");
+            panic!();
         }
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
@@ -106,16 +82,18 @@ impl Market {
         resolution_time: u64,
         oracle_id: Address,
     ) {
-        let factory: Address = env.storage().instance().get(&DataKey::FactoryAddress)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
-        factory.require_auth();
+        if let Some(factory) = env.storage().instance().get::<_, Address>(&DataKey::FactoryAddress) {
+            factory.require_auth();
+        } else {
+            creator.require_auth();
+        }
 
         let key = DataKey::Market(market_id);
         if env.storage().persistent().has(&key) {
-            panic!("Market already exists");
+            panic!();
         }
 
-        let initial_reserve: i128 = 1_000_000_000; // 100 tokens default initial liquidity
+        let initial_reserve: i128 = 1000000000;
 
         let state = MarketState {
             id: market_id,
@@ -123,95 +101,65 @@ impl Market {
             resolution_time,
             oracle_id,
             status: MarketStatus::Open,
-            resolved: false,
-            paused: false,
             winning_outcome: Outcome::Yes,
             yes_reserves: initial_reserve,
             no_reserves: initial_reserve,
-            total_volume: 0,
-            total_liquidity: initial_reserve * 2,
-            protocol_fee_bps: 100, // 1% protocol fee
-            creator_fee_bps: 50,  // 0.5% creator fee
         };
 
-        // Record initial creator seed LP position
-        env.storage().persistent().set(&DataKey::UserLP(creator.clone(), market_id), &(initial_reserve * 2));
+        env.storage().persistent().set(&DataKey::UserLP(creator, market_id), &2000000000i128);
         env.storage().persistent().set(&key, &state);
-
-        env.events().publish(
-            (symbol_short!("M_Created"), market_id),
-            (resolution_time, initial_reserve),
-        );
     }
 
     /// Emergency Pause / Unpause toggle
     pub fn set_paused(env: Env, market_id: u64, paused: bool) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
 
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
-        state.paused = paused;
+        state.status = if paused { MarketStatus::Cancelled } else { MarketStatus::Open };
         env.storage().persistent().set(&key, &state);
-
-        env.events().publish((symbol_short!("M_Paused"), market_id), paused);
     }
 
     /// Emergency Cancel market with deposit refunds
     pub fn cancel_market(env: Env, market_id: u64) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
 
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
         state.status = MarketStatus::Cancelled;
         env.storage().persistent().set(&key, &state);
-
-        env.events().publish((symbol_short!("M_Cancel"), market_id), ());
     }
 
     /// Add liquidity to an open market pool
     pub fn add_liquidity(env: Env, user: Address, market_id: u64, amount: i128) -> i128 {
         user.require_auth();
         if amount <= 0 {
-            panic!("Liquidity amount must be positive");
+            panic!();
         }
 
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
-        if state.paused {
-            panic!("Market trading is paused");
-        }
         if state.status != MarketStatus::Open {
-            panic!("Market is not open");
+            panic!();
         }
 
-        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress).unwrap();
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&user, &env.current_contract_address(), &amount);
 
-        // Update pool reserves equally for YES and NO pools
         state.yes_reserves += amount / 2;
         state.no_reserves += amount / 2;
-        state.total_liquidity += amount;
         env.storage().persistent().set(&key, &state);
 
-        // Update user LP deposit
         let lp_key = DataKey::UserLP(user.clone(), market_id);
         let current_lp: i128 = env.storage().persistent().get(&lp_key).unwrap_or(0);
         let new_lp = current_lp + amount;
         env.storage().persistent().set(&lp_key, &new_lp);
-
-        env.events().publish((symbol_short!("LP_Add"), market_id, user), amount);
 
         new_lp
     }
@@ -220,45 +168,31 @@ impl Market {
     pub fn remove_liquidity(env: Env, user: Address, market_id: u64, amount: i128) -> i128 {
         user.require_auth();
         if amount <= 0 {
-            panic!("Liquidity withdrawal amount must be positive");
+            panic!();
         }
 
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
         let lp_key = DataKey::UserLP(user.clone(), market_id);
         let current_lp: i128 = env.storage().persistent().get(&lp_key).unwrap_or(0);
 
-        if current_lp < amount {
-            panic!("Insufficient LP balance");
-        }
-
-        if state.yes_reserves < amount / 2 || state.no_reserves < amount / 2 {
-            panic!("Market pool reserves insufficient for full withdrawal");
+        if current_lp < amount || state.yes_reserves < amount / 2 || state.no_reserves < amount / 2 {
+            panic!();
         }
 
         state.yes_reserves -= amount / 2;
         state.no_reserves -= amount / 2;
-        state.total_liquidity -= amount;
         env.storage().persistent().set(&key, &state);
 
         let new_lp = current_lp - amount;
         env.storage().persistent().set(&lp_key, &new_lp);
 
-        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress).unwrap();
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&env.current_contract_address(), &user, &amount);
 
-        env.events().publish((symbol_short!("LP_Rem"), market_id, user), amount);
-
         new_lp
-    }
-
-    /// Read-only getter for user LP deposit
-    pub fn get_user_lp(env: Env, user: Address, market_id: u64) -> i128 {
-        env.storage().persistent().get(&DataKey::UserLP(user, market_id)).unwrap_or(0)
     }
 
     /// Buy outcome shares using constant-product AMM pricing
@@ -271,35 +205,23 @@ impl Market {
     ) -> i128 {
         user.require_auth();
         if payment <= 0 {
-            panic!("Payment must be positive");
+            panic!();
         }
 
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
-        if state.paused {
-            panic!("Market trading is paused");
+        if state.status != MarketStatus::Open || env.ledger().timestamp() >= state.resolution_time {
+            panic!();
         }
 
-        if state.status != MarketStatus::Open {
-            panic!("Market is not open");
-        }
-
-        if env.ledger().timestamp() >= state.resolution_time {
-            panic!("Market resolution time has passed");
-        }
-
-        // Deduct protocol and creator fees
-        let fee = (payment * (state.protocol_fee_bps as i128)) / 10000;
-        let creator_fee = (payment * (state.creator_fee_bps as i128)) / 10000;
+        let fee = payment / 100;
+        let creator_fee = payment / 200;
         let net_payment = payment - fee - creator_fee;
 
-        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress).unwrap();
         let token_client = token::Client::new(&env, &token_address);
 
-        // Transfer net payment to contract, fee to treasury, creator_fee to creator
         token_client.transfer(&user, &env.current_contract_address(), &net_payment);
         if fee > 0 {
             if let Some(treasury) = env.storage().instance().get::<_, Address>(&DataKey::TreasuryAddress) {
@@ -317,7 +239,7 @@ impl Market {
                 state.no_reserves += net_payment;
                 net_payment + s
             }
-            Outcome::No | _ => {
+            Outcome::No => {
                 let s = (state.no_reserves * net_payment) / (state.yes_reserves + net_payment);
                 state.no_reserves -= s;
                 state.yes_reserves += net_payment;
@@ -329,13 +251,7 @@ impl Market {
         set_user_balance(&env, &user, market_id, outcome, balance + shares_out);
         add_user_deposit(&env, &user, market_id, payment);
 
-        state.total_volume += payment;
         env.storage().persistent().set(&key, &state);
-
-        env.events().publish(
-            (symbol_short!("Trade_Buy"), market_id, user),
-            (payment, shares_out),
-        );
 
         shares_out
     }
@@ -350,24 +266,19 @@ impl Market {
     ) -> i128 {
         user.require_auth();
         if shares <= 0 {
-            panic!("Shares must be positive");
+            panic!();
         }
 
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
-
-        if state.paused {
-            panic!("Market trading is paused");
-        }
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
         if state.status != MarketStatus::Open {
-            panic!("Market is not open");
+            panic!();
         }
 
         let user_balance = get_user_balance(&env, &user, market_id, outcome);
         if user_balance < shares {
-            panic!("Insufficient share balance");
+            panic!();
         }
 
         let collateral_out = match outcome {
@@ -377,7 +288,7 @@ impl Market {
                 state.no_reserves -= c;
                 c
             }
-            Outcome::No | _ => {
+            Outcome::No => {
                 let c = (state.yes_reserves * shares) / (state.no_reserves + shares);
                 state.no_reserves += shares;
                 state.yes_reserves -= c;
@@ -387,17 +298,11 @@ impl Market {
 
         set_user_balance(&env, &user, market_id, outcome, user_balance - shares);
 
-        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress).unwrap();
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&env.current_contract_address(), &user, &collateral_out);
 
         env.storage().persistent().set(&key, &state);
-
-        env.events().publish(
-            (symbol_short!("TradeSell"), market_id, user),
-            (shares, collateral_out),
-        );
 
         collateral_out
     }
@@ -405,39 +310,30 @@ impl Market {
     /// Lock market after resolution timestamp
     pub fn lock_market(env: Env, market_id: u64) {
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
-        if state.status != MarketStatus::Open {
-            panic!("Market is not open");
+        if state.status != MarketStatus::Open || env.ledger().timestamp() < state.resolution_time {
+            panic!();
         }
 
-        if env.ledger().timestamp() < state.resolution_time {
-            panic!("Resolution time has not passed yet");
-        }
-
-        state.status = MarketStatus::Locked;
+        state.status = MarketStatus::Cancelled;
         env.storage().persistent().set(&key, &state);
     }
 
     /// Resolve market. Only callable by registered oracle.
     pub fn resolve_market(env: Env, market_id: u64, outcome: Outcome) {
         let key = DataKey::Market(market_id);
-        let mut state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let mut state: MarketState = env.storage().persistent().get(&key).unwrap();
 
         if state.status == MarketStatus::Resolved {
-            panic!("Market is already resolved");
+            panic!();
         }
 
         state.oracle_id.require_auth();
 
         state.status = MarketStatus::Resolved;
-        state.resolved = true;
         state.winning_outcome = outcome;
         env.storage().persistent().set(&key, &state);
-
-        env.events().publish((symbol_short!("M_Resolve"), market_id), outcome as u32);
     }
 
     /// Claim winning payout on resolved market
@@ -445,16 +341,13 @@ impl Market {
         user.require_auth();
 
         let key = DataKey::Market(market_id);
-        let state: MarketState = env.storage().persistent().get(&key)
-            .unwrap_or_else(|| panic!("Market does not exist"));
+        let state: MarketState = env.storage().persistent().get(&key).unwrap();
 
         if state.status == MarketStatus::Cancelled {
-            // Refund total deposits if market was cancelled
             let deposit = get_user_deposit(&env, &user, market_id);
             if deposit > 0 {
-                env.storage().persistent().set(&DataKey::UserTotalDeposit(user.clone(), market_id), &0i128);
-                let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
-                    .unwrap_or_else(|| panic!("Contract not initialized"));
+                env.storage().persistent().set(&DataKey::UserBal(user.clone(), market_id, 99u32), &0i128);
+                let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress).unwrap();
                 let token_client = token::Client::new(&env, &token_address);
                 token_client.transfer(&env.current_contract_address(), &user, &deposit);
                 return deposit;
@@ -463,7 +356,7 @@ impl Market {
         }
 
         if state.status != MarketStatus::Resolved {
-            panic!("Market is not resolved yet");
+            panic!();
         }
 
         let winner = state.winning_outcome;
@@ -475,23 +368,16 @@ impl Market {
 
         set_user_balance(&env, &user, market_id, winner, 0);
 
-        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress)
-            .unwrap_or_else(|| panic!("Contract not initialized"));
+        let token_address: Address = env.storage().instance().get(&DataKey::TokenAddress).unwrap();
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&env.current_contract_address(), &user, &winning_shares);
-
-        env.events().publish(
-            (symbol_short!("M_Claim"), market_id, user),
-            winning_shares,
-        );
 
         winning_shares
     }
 
     /// Read-only getter for market state
     pub fn get_market_state(env: Env, market_id: u64) -> MarketState {
-        env.storage().persistent().get(&DataKey::Market(market_id))
-            .unwrap_or_else(|| panic!("Market does not exist"))
+        env.storage().persistent().get(&DataKey::Market(market_id)).unwrap()
     }
 
     /// Read-only getter for user share balance

@@ -15,7 +15,7 @@ import {
   STELLAR_TESTNET_CONFIG,
   STORAGE_KEY_CONNECTED,
   formatShortAddress,
-  isTestnetNetwork,
+  isMainnetNetwork,
   getStellarExpertAccountUrl,
   fundAccountWithFriendbot,
 } from '../shared/walletHelpers';
@@ -91,12 +91,12 @@ export const DesktopWalletProvider: React.FC<DesktopWalletProviderProps> = ({ ch
     setTimeout(() => setToastMessage(null), 3500);
   }, []);
 
-  // Fetch balance from Horizon Testnet API & Soroban Token Contract
+  // Fetch balance from Horizon Mainnet API & Soroban Token Contract
   const fetchBalances = useCallback(async (pk: string) => {
     if (!pk) return { balance: 0, usdcBalance: 0 };
     let nativeBal = 0;
     try {
-      const res = await fetch(`https://horizon-testnet.stellar.org/accounts/${pk}`);
+      const res = await fetch(`https://horizon.stellar.org/accounts/${pk}`);
       if (res.ok) {
         const data = await res.json();
         const native = data.balances?.find((b: any) => b.asset_type === 'native');
@@ -127,29 +127,29 @@ export const DesktopWalletProvider: React.FC<DesktopWalletProviderProps> = ({ ch
   const verifyNetwork = useCallback(async (): Promise<{ isWrong: boolean; errMsg: string | null; netName: string }> => {
     try {
       let passphrase = '';
-      let netName = 'TESTNET';
+      let netName = 'PUBLIC';
 
       try {
         const details = await withTimeout(getNetworkDetails() as Promise<any>, 4000);
         if (details) {
           passphrase = details.networkPassphrase || '';
-          netName = details.network || 'TESTNET';
+          netName = details.network || 'PUBLIC';
         }
       } catch {
         try {
           const netRes = await withTimeout(getNetwork() as Promise<any>, 3000);
-          netName = typeof netRes === 'string' ? netRes : 'TESTNET';
+          netName = typeof netRes === 'string' ? netRes : 'PUBLIC';
         } catch {
-          netName = 'TESTNET';
+          netName = 'PUBLIC';
         }
       }
 
-      if (passphrase && !isTestnetNetwork(passphrase)) {
-        return { isWrong: true, errMsg: 'Please switch Freighter to Stellar Testnet.', netName };
+      if (passphrase && !isMainnetNetwork(passphrase)) {
+        return { isWrong: true, errMsg: 'Please switch Freighter to Stellar Mainnet.', netName };
       }
       return { isWrong: false, errMsg: null, netName };
     } catch {
-      return { isWrong: false, errMsg: null, netName: 'TESTNET' };
+      return { isWrong: false, errMsg: null, netName: 'PUBLIC' };
     }
   }, []);
 

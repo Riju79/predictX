@@ -72,14 +72,14 @@ export const InstallWalletModal: React.FC<InstallWalletModalProps> = ({ isOpen, 
           }}>
             {errorMessage && !errorMessage.includes('not found') && !errorMessage.includes('not installed')
               ? errorMessage
-              : 'The Freighter browser extension is required to connect your wallet and trade on the Stellar Testnet.'}
+              : 'The Freighter browser extension is required to connect your wallet and trade on the Stellar Mainnet.'}
           </p>
 
           {/* Steps */}
           {[
             { n: 1, text: 'Install the Freighter extension from freighter.app' },
             { n: 2, text: 'Create or import your Stellar wallet' },
-            { n: 3, text: 'Switch network to Stellar Testnet in Freighter settings' },
+            { n: 3, text: 'Ensure network is set to Stellar Mainnet (Public)' },
             { n: 4, text: 'Click "Connect Wallet" on PredictX to connect' },
           ].map(({ n, text }) => (
             <div key={n} style={{

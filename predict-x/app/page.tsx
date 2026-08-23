@@ -1700,9 +1700,9 @@ export default function Home() {
           </div>
           <div className="footer-col">
             <h4>Community</h4>
-            <a href="#">Discord</a>
-            <a href="#">Instagram</a>
-            <a href="#">X</a>
+            <a href="https://x.com/predict_x79" target="_blank" rel="noopener noreferrer">X (@predict_x79)</a>
+            <a href="#">LinkedIn</a>
+            <a href="https://github.com/Riju79/predictX" target="_blank" rel="noopener noreferrer">GitHub</a>
           </div>
           <Link href="/app" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 'fit-content' }}>
             Start trading ➔

@@ -1,9 +1,11 @@
-export const STELLAR_TESTNET_CONFIG = {
-  network: 'TESTNET',
-  networkPassphrase: 'Test SDF Network ; September 2015',
-  rpcUrl: 'https://soroban-testnet.stellar.org',
-  horizonUrl: 'https://horizon-testnet.stellar.org',
+export const STELLAR_MAINNET_CONFIG = {
+  network: 'PUBLIC',
+  networkPassphrase: 'Public Global Stellar Network ; September 2015',
+  rpcUrl: 'https://mainnet.sorobanrpc.com',
+  horizonUrl: 'https://horizon.stellar.org',
 };
+
+export const STELLAR_TESTNET_CONFIG = STELLAR_MAINNET_CONFIG;
 
 export const STORAGE_KEY_CONNECTED = 'predictx_wallet_connected';
 
@@ -16,23 +18,25 @@ export const formatShortAddress = (addr: string): string => {
 };
 
 /**
- * Validate if connected network matches Stellar Testnet passphrase
+ * Validate if connected network matches Stellar Mainnet passphrase
  */
-export const isTestnetNetwork = (passphrase?: string | null): boolean => {
-  if (!passphrase) return false;
+export const isMainnetNetwork = (passphrase?: string | null): boolean => {
+  if (!passphrase) return true;
   const passUpper = passphrase.toUpperCase();
   return (
-    passUpper.includes('TEST') ||
-    passphrase === STELLAR_TESTNET_CONFIG.networkPassphrase ||
-    passphrase === STELLAR_TESTNET_CONFIG.network
+    passUpper.includes('PUBLIC') ||
+    passphrase === STELLAR_MAINNET_CONFIG.networkPassphrase ||
+    passphrase === STELLAR_MAINNET_CONFIG.network
   );
 };
+
+export const isTestnetNetwork = isMainnetNetwork;
 
 /**
  * Generate Stellar Expert explorer URL for account
  */
 export const getStellarExpertAccountUrl = (publicKey: string): string => {
-  return `https://stellar.expert/explorer/testnet/account/${publicKey}`;
+  return `https://stellar.expert/explorer/public/account/${publicKey}`;
 };
 
 /**
