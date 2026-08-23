@@ -353,24 +353,10 @@ export default function CreateMarketModal({
                 </div>
 
                 {walletBalance < parseFloat(liquidity || '0') && (
-                  <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '8px 12px', borderRadius: 8 }}>
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '8px 12px', borderRadius: 8 }}>
                     <span style={{ fontSize: 11.5, color: '#FCA5A5', fontWeight: 500 }}>
-                      Insufficient XLM balance for seed liquidity.
+                      Insufficient XLM balance. Available: {walletBalance.toFixed(2)} XLM. Please enter an amount ≤ {walletBalance > 1 ? (walletBalance - 1).toFixed(1) : walletBalance.toFixed(1)} XLM.
                     </span>
-                    <button
-                      type="button"
-                      onClick={fundAccount}
-                      disabled={isFunding}
-                      style={{
-                        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                        color: '#FFFFFF', border: 'none', borderRadius: 6,
-                        padding: '4px 10px', fontSize: 11, fontWeight: 700,
-                        cursor: 'pointer', fontFamily: fontBody,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {isFunding ? 'Funding XLM...' : '🎁 Fund 10,000 XLM'}
-                    </button>
                   </div>
                 )}
               </div>
