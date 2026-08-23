@@ -193,24 +193,22 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         }
 
         try {
-          await withTimeout(setAllowed() as Promise<any>, 4000).catch(() => null);
+          const addrRes = await withTimeout(getAddress() as Promise<any>, 4000).catch(() => null);
+          const addr = typeof addrRes === 'string' ? addrRes : addrRes?.address;
+          if (addr && addr.length >= 50) return addr;
         } catch {
           // continue
         }
 
-        const [accessRes, addrRes] = await Promise.allSettled([
-          withTimeout(requestAccess() as Promise<any>, 7000, 'TIMEOUT'),
-          withTimeout(getAddress() as Promise<any>, 7000, 'TIMEOUT'),
-        ]);
+        try {
+          const accessRes = await withTimeout(requestAccess() as Promise<any>, 7000).catch(() => null);
+          const addr = typeof accessRes === 'string' ? accessRes : accessRes?.address;
+          if (addr && addr.length >= 50) return addr;
+        } catch {
+          // continue
+        }
 
-        const addrValue = addrRes.status === 'fulfilled' ? addrRes.value : null;
-        const accessValue = accessRes.status === 'fulfilled' ? accessRes.value : null;
-
-        return (
-          (typeof addrValue === 'string' ? addrValue : addrValue?.address) ||
-          (accessValue as any)?.address ||
-          ''
-        );
+        return '';
       };
 
       const address = await requestWithTimeout();
