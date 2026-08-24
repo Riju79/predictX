@@ -102,25 +102,23 @@ export default function CreateMarketModal({
       color: item.color,
     }));
 
+    onCreateConfirm({
+      title,
+      category,
+      ic,
+      outcomes: createdOutcomes,
+      vol: liqVal >= 1000 ? `$${(liqVal / 1000).toFixed(1)}K` : `$${liqVal.toFixed(0)}`,
+      liquidityAmount: liqVal,
+      end: duration,
+    });
+
+    setTxState('success');
     setTimeout(() => {
-      setTxState('success');
-      setTimeout(() => {
-        onCreateConfirm({
-          title,
-          category,
-          ic,
-          outcomes: createdOutcomes,
-          vol: liqVal >= 1000 ? `$${(liqVal / 1000).toFixed(1)}K` : `$${liqVal.toFixed(0)}`,
-          liquidityAmount: liqVal,
-          end: duration,
-        });
-        // reset form
-        setTitle('');
-        setLiquidity('500');
-        setTxState('idle');
-        onClose();
-      }, 1200);
-    }, 1800);
+      setTitle('');
+      setLiquidity('2');
+      setTxState('idle');
+      onClose();
+    }, 600);
   };
 
   return (

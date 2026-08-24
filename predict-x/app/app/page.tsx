@@ -371,9 +371,10 @@ export default function AppDashboard() {
   useEffect(() => {
     api.getCustomMarkets().then(storedCustom => {
       if (storedCustom && storedCustom.length > 0) {
+        const validCustoms = storedCustom.filter((c: any) => !c.title.toLowerCase().includes('fulham'));
         setMarkets(prev => {
           const existingMap = new Map(prev.map(m => [m.id, m]));
-          storedCustom.forEach((cm: any) => existingMap.set(cm.id, cm));
+          validCustoms.forEach((cm: any) => existingMap.set(cm.id, cm));
           return Array.from(existingMap.values());
         });
       }
@@ -542,7 +543,7 @@ export default function AppDashboard() {
         .catch(e => console.warn('Failed to load trades:', e));
 
       api.getCreatedMarkets(publicKey)
-        .then(setCreatedMarkets)
+        .then(list => setCreatedMarkets((list || []).filter(m => !m.title.toLowerCase().includes('fulham'))))
         .catch(e => console.warn('Failed to load created markets:', e));
 
       api.getPortfolio(publicKey)
