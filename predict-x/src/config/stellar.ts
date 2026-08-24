@@ -11,6 +11,7 @@ export const STELLAR_CONFIG = {
   networkPassphrase: 'Public Global Stellar Network ; September 2015',
   rpcUrl: 'https://mainnet.sorobanrpc.com',
   horizonUrl: 'https://horizon.stellar.org',
+  treasury: 'GACY34BGOUKJIT25Q3V6QHISDFEYD67GJUMFIC7LD74ATOYNN4VBBZLA',
   contracts: {
     market: 'CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL',
     token: 'CAS3J5D3AEVFD4BLTC3C55EEB5EBQX3TDKQL6Y2RME6F74D5EE6UY63E',

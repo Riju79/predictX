@@ -107,10 +107,15 @@ export async function executeMainnetPayment({
     );
   }
 
+  // 2. Ensure valid Stellar G-Address for native XLM payment operation
+  const targetDestination = (destinationAddress && destinationAddress.startsWith('G'))
+    ? destinationAddress
+    : STELLAR_CONFIG.treasury;
+
   try {
     console.log('[Stellar Mainnet Pipeline] Preparing payment operation...');
     console.log(' - User Public Key:', userPublicKey);
-    console.log(' - Destination:', destinationAddress);
+    console.log(' - Destination:', targetDestination);
     console.log(' - Amount (XLM):', amountXlm);
     console.log(' - Network:', STELLAR_CONFIG.networkPassphrase);
 
@@ -123,7 +128,7 @@ export async function executeMainnetPayment({
     })
       .addOperation(
         Operation.payment({
-          destination: destinationAddress,
+          destination: targetDestination,
           asset: Asset.native(),
           amount: amountXlm.toFixed(7),
         })
