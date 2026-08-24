@@ -18,6 +18,7 @@ import { useWallet } from '@/src/wallet';
 import { Outcome } from '@/src/bindings/market';
 import { signTransaction } from '@stellar/freighter-api';
 import { TransactionBuilder, Operation, Horizon, Networks, Asset } from '@stellar/stellar-sdk';
+import { executeMainnetPayment, fetchMainnetXlmBalance, normalizeStellarError } from '@/src/lib/stellar/transactionService';
 import { 
   STELLAR_CONFIG, 
   toRawAmount, 
@@ -594,53 +595,26 @@ export default function AppDashboard() {
 
     try {
       setIsSubmittingTx(true);
-      triggerToast(`Please confirm transaction in your Freighter wallet...`);
-      const marketClient = getMarketClient(publicKey);
-      const raw = toRawAmount(amount);
-      const parsedNumericId = getOnChainMarketId(target.id);
-      const outcome = (outcomeId.endsWith('-1') || outcomeName.toUpperCase() === 'YES' || outcomeName.toUpperCase() === 'LONG' || outcomeName.toUpperCase() === 'UP')
-        ? Outcome.Yes
-        : Outcome.No;
+      triggerToast(`Please sign the ${amount.toFixed(1)} XLM trade in Freighter Wallet...`);
 
-      const buyTx = await marketClient.buy_shares({
-        user: publicKey,
-        market_id: parsedNumericId,
-        outcome,
-        payment: raw,
+      const txRes = await executeMainnetPayment({
+        userPublicKey: publicKey,
+        destinationAddress: STELLAR_CONFIG.contracts.market,
+        amountXlm: amount,
       });
 
-      const res = await buyTx.signAndSend();
-      txHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
-
-      // Capture the ACTUAL shares_out from the contract return value
-      // The contract returns shares_out as i128 (raw units). Convert to display float.
-      const contractSharesOut = (res as any)?.result;
-      if (contractSharesOut !== undefined && contractSharesOut !== null) {
-        const rawOut = typeof contractSharesOut === 'bigint' ? contractSharesOut : BigInt(String(contractSharesOut));
-        actualSharesOut = fromRawAmount(rawOut);
+      if (!txRes.success || !txRes.txHash) {
+        throw new Error('Transaction submission failed to confirm on Stellar Mainnet.');
       }
 
-      if (txHash) {
-        triggerToast(`✅ On-Chain Bet Confirmed! Tx: ${txHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
-      } else {
-        triggerToast(`✅ On-Chain Trade Executed! Market #${target.id} state updated.`, 'success');
-      }
-    } catch (e: unknown) {
-      console.error('Soroban trade transaction error:', e);
-      const errMsg = e instanceof Error ? e.message : String(e);
-      if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
-        triggerToast(`Transaction cancelled by user.`, 'error');
-        setIsSubmittingTx(false);
-        return;
-      } else if (errMsg.includes('Account not found')) {
-        triggerToast(`⚠️ Account not funded on Testnet. Click "Fund Account (Friendbot)" in your wallet menu!`, 'error');
-        setIsSubmittingTx(false);
-        return;
-      } else {
-        triggerToast(`Trade transaction failed: ${errMsg.slice(0, 60)}...`, 'error');
-        setIsSubmittingTx(false);
-        return;
-      }
+      txHash = txRes.txHash;
+      triggerToast(`✅ On-Chain Trade Confirmed! Tx: ${txHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
+    } catch (e: any) {
+      console.error('[Mainnet Trade Error]:', e);
+      const normalized = normalizeStellarError(e);
+      triggerToast(`Trade failed: ${normalized.message}`, 'error');
+      setIsSubmittingTx(false);
+      return; // STOP execution completely if trade fails or user cancels!
     } finally {
       setIsSubmittingTx(false);
       await loadMarketData(publicKey);
@@ -748,69 +722,40 @@ export default function AppDashboard() {
     let createdMarketId = `custom-${Date.now()}`;
     let createTxHash: string | undefined = undefined;
 
-    if (walletConnected && publicKey) {
-      try {
-        triggerToast(`Please sign the ${cost.toFixed(1)} XLM Seed Liquidity deposit in Freighter...`);
-        try {
-          const server = new Horizon.Server(STELLAR_CONFIG.horizonUrl);
-          const account = await server.loadAccount(publicKey);
-          const tx = new TransactionBuilder(account, {
-            fee: '10000',
-            networkPassphrase: STELLAR_CONFIG.networkPassphrase,
-          })
-            .addOperation(
-              Operation.payment({
-                destination: STELLAR_CONFIG.contracts.market,
-                asset: Asset.native(),
-                amount: cost.toFixed(7),
-              })
-            )
-            .setTimeout(180)
-            .build();
+    if (!walletConnected || !publicKey) {
+      triggerToast(`⚠️ Please connect your Freighter wallet to deploy a market on Stellar Mainnet!`, 'error');
+      await connectWallet();
+      return;
+    }
 
-          const xdr = tx.toXDR();
-          const signedRes = await signTransaction(xdr, {
-            networkPassphrase: STELLAR_CONFIG.networkPassphrase,
-            address: publicKey,
-          });
+    try {
+      setIsSubmittingTx(true);
+      triggerToast(`Please approve ${cost.toFixed(1)} XLM Seed Liquidity deposit in Freighter Wallet...`);
 
-          let signedXdr: string | undefined = typeof signedRes === 'string' ? signedRes : (signedRes as any)?.signedTxXdr || (signedRes as any)?.signedXdr;
-          if (!signedXdr && typeof signedRes === 'object' && signedRes !== null) {
-            for (const val of Object.values(signedRes)) {
-              if (typeof val === 'string' && val.length > 50 && val.startsWith('AAAA')) {
-                signedXdr = val;
-                break;
-              }
-            }
-          }
+      const txRes = await executeMainnetPayment({
+        userPublicKey: publicKey,
+        destinationAddress: STELLAR_CONFIG.contracts.market,
+        amountXlm: cost,
+      });
 
-          if (signedXdr) {
-            const signedTx = TransactionBuilder.fromXDR(signedXdr, STELLAR_CONFIG.networkPassphrase);
-            const response = await server.submitTransaction(signedTx);
-            createTxHash = response.hash;
-            if (createTxHash) {
-              triggerToast(`✅ Mainnet Seed Liquidity Deposited! Tx: ${createTxHash.slice(0, 8)}...`, 'success');
-            }
-          }
-        } catch (simErr: any) {
-          const msg = simErr?.message || String(simErr);
-          if (msg.includes('User declined') || msg.includes('User canceled') || msg.includes('Declined')) {
-            triggerToast(`Market creation cancelled by user in wallet.`, 'error');
-            return;
-          }
-          console.info('Stellar payment note:', msg);
-          triggerToast(`✅ Registered Market Contract on Mainnet!`, 'success');
-        }
-      } catch (e: unknown) {
-        console.error('Market creation error:', e);
-      } finally {
-        await loadMarketData(publicKey);
-        if (typeof wallet.refresh === 'function') {
-          await wallet.refresh();
-        }
+      if (!txRes.success || !txRes.txHash) {
+        throw new Error('Transaction submission failed to confirm on Stellar Mainnet.');
       }
-    } else {
-      triggerToast(`Multi-Outcome Contract deployed for "${newM.title.substring(0, 22)}..." (Demo Mode)!`);
+
+      createTxHash = txRes.txHash;
+      triggerToast(`✅ Mainnet Seed Liquidity Deposited! Tx: ${createTxHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
+    } catch (e: any) {
+      console.error('[Create Market Mainnet Error]:', e);
+      const errMsg = e?.message || String(e);
+      triggerToast(`Market deployment stopped: ${errMsg}`, 'error');
+      setIsSubmittingTx(false);
+      return; // STOP execution completely on failure/rejection!
+    } finally {
+      setIsSubmittingTx(false);
+      await loadMarketData(publicKey);
+      if (typeof wallet.refresh === 'function') {
+        await wallet.refresh();
+      }
     }
 
     const createdMarket: Market = {
