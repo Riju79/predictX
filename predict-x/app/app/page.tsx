@@ -747,20 +747,19 @@ export default function AppDashboard() {
 
     if (walletConnected && publicKey) {
       try {
-        triggerToast(`Deploying new Market Contract via Soroban Factory...`);
-        const factoryClient = getFactoryClient(publicKey);
+        triggerToast(`Deploying new Market Contract via Soroban...`);
+        const marketClient = getMarketClient(publicKey);
+        const marketId = BigInt(Date.now() % 1000000);
         const resolutionTime = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400); // 30 days default
-        const createTx = await factoryClient.create_market({
+        const createTx = await marketClient.create_market({
           creator: publicKey,
-          question: toSorobanSymbol(newM.title),
+          market_id: marketId,
           resolution_time: resolutionTime,
           oracle_id: STELLAR_CONFIG.contracts.oracle,
         });
         const res = await createTx.signAndSend();
         createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
-        if (res.result) {
-          createdMarketId = `soroban-${res.result.toString()}`;
-        }
+        createdMarketId = `soroban-${marketId}`;
         if (createTxHash) {
           triggerToast(`✅ Deployed Soroban Market Contract! Tx: ${createTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
         } else {
