@@ -136,13 +136,29 @@ export default function PolymarketCard({ market, onSelectMarket }: PolymarketCar
         })}
       </div>
 
-      {/* ── 4. FOOTER ROW: Volume ── */}
+      {/* ── 4. FOOTER ROW: Volume & StellarExpert Explorer Link ── */}
       <div style={{
-        display: 'flex', alignItems: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderTop: '1px solid #1E2532', paddingTop: 10, marginTop: 2,
         fontSize: 11.5, color: '#8991A3', fontFamily: fontMono,
       }}>
         <span>{market.vol} vol</span>
+        {(market.txHash || market.explorerUrl) && (
+          <a
+            href={market.explorerUrl || `https://stellar.expert/explorer/public/tx/${market.txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{
+              color: '#38BDF8', fontSize: 11, fontWeight: 700,
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+              background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: 4,
+              border: '1px solid rgba(56, 189, 248, 0.25)'
+            }}
+          >
+            🔗 StellarExpert ↗
+          </a>
+        )}
       </div>
     </div>
   );

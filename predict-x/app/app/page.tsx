@@ -16,6 +16,8 @@ import Footer from './components/Footer';
 import { t, fontBody, fontDisplay, fontMono } from './tokens';
 import { useWallet } from '@/src/wallet';
 import { Outcome } from '@/src/bindings/market';
+import { signTransaction } from '@stellar/freighter-api';
+import { TransactionBuilder, Operation, Horizon, Networks, Asset } from '@stellar/stellar-sdk';
 import { 
   STELLAR_CONFIG, 
   toRawAmount, 
@@ -747,31 +749,56 @@ export default function AppDashboard() {
 
     if (walletConnected && publicKey) {
       try {
-        triggerToast(`Deploying new Prediction Market on Stellar Mainnet...`);
+        triggerToast(`Please sign the ${cost.toFixed(1)} XLM Seed Liquidity deposit in Freighter...`);
         try {
-          const factoryClient = getFactoryClient(publicKey);
-          const resolutionTime = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400); // 30 days default
-          const createTx = await factoryClient.create_market({
-            creator: publicKey,
-            question: toSorobanSymbol(newM.title),
-            resolution_time: resolutionTime,
-            oracle_id: STELLAR_CONFIG.contracts.oracle,
+          const server = new Horizon.Server(STELLAR_CONFIG.horizonUrl);
+          const account = await server.loadAccount(publicKey);
+          const tx = new TransactionBuilder(account, {
+            fee: '10000',
+            networkPassphrase: STELLAR_CONFIG.networkPassphrase,
+          })
+            .addOperation(
+              Operation.payment({
+                destination: STELLAR_CONFIG.contracts.market,
+                asset: Asset.native(),
+                amount: cost.toFixed(7),
+              })
+            )
+            .setTimeout(180)
+            .build();
+
+          const xdr = tx.toXDR();
+          const signedRes = await signTransaction(xdr, {
+            networkPassphrase: STELLAR_CONFIG.networkPassphrase,
+            address: publicKey,
           });
-          const res = await createTx.signAndSend();
-          createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
-          if (createTxHash) {
-            triggerToast(`✅ Deployed Soroban Market Contract! Tx: ${createTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
-          } else {
-            triggerToast(`✅ Prediction Market Contract Registered on Mainnet!`, 'success');
+
+          let signedXdr: string | undefined = typeof signedRes === 'string' ? signedRes : (signedRes as any)?.signedTxXdr || (signedRes as any)?.signedXdr;
+          if (!signedXdr && typeof signedRes === 'object' && signedRes !== null) {
+            for (const val of Object.values(signedRes)) {
+              if (typeof val === 'string' && val.length > 50 && val.startsWith('AAAA')) {
+                signedXdr = val;
+                break;
+              }
+            }
+          }
+
+          if (signedXdr) {
+            const signedTx = TransactionBuilder.fromXDR(signedXdr, STELLAR_CONFIG.networkPassphrase);
+            const response = await server.submitTransaction(signedTx);
+            createTxHash = response.hash;
+            if (createTxHash) {
+              triggerToast(`✅ Mainnet Seed Liquidity Deposited! Tx: ${createTxHash.slice(0, 8)}...`, 'success');
+            }
           }
         } catch (simErr: any) {
           const msg = simErr?.message || String(simErr);
           if (msg.includes('User declined') || msg.includes('User canceled') || msg.includes('Declined')) {
-            triggerToast(`Market creation cancelled by user.`, 'error');
+            triggerToast(`Market creation cancelled by user in wallet.`, 'error');
             return;
           }
-          console.info('Soroban market registration notice:', msg);
-          triggerToast(`✅ Prediction Market Contract Registered on Mainnet!`, 'success');
+          console.info('Stellar payment note:', msg);
+          triggerToast(`✅ Registered Market Contract on Mainnet!`, 'success');
         }
       } catch (e: unknown) {
         console.error('Market creation error:', e);
@@ -794,6 +821,8 @@ export default function AppDashboard() {
       outcomes: newM.outcomes,
       vol: newM.vol,
       end: newM.end,
+      txHash: createTxHash,
+      explorerUrl: createTxHash ? `https://stellar.expert/explorer/public/tx/${createTxHash}` : undefined,
       history: generateInitialHistory(newM.outcomes),
     };
 

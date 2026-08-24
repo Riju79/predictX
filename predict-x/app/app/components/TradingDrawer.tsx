@@ -29,6 +29,8 @@ export interface Market {
   src?: string;
   history?: Record<string, number[]>;
   timestamps?: string[];
+  txHash?: string;
+  explorerUrl?: string;
 }
 
 interface TradingDrawerProps {
