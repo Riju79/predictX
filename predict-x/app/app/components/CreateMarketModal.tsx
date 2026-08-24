@@ -37,7 +37,7 @@ export default function CreateMarketModal({
   const [category, setCategory] = useState('Elections');
   const [ic, setIc] = useState('🗳️');
   const [duration, setDuration] = useState('30d');
-  const [liquidity, setLiquidity] = useState('500');
+  const [liquidity, setLiquidity] = useState('2');
 
   // Outcome choices state
   const [outcomeInputs, setOutcomeInputs] = useState<Array<{ name: string; color: string }>>([
@@ -336,7 +336,8 @@ export default function CreateMarketModal({
                   <input
                     type="number"
                     required
-                    min="10"
+                    min="0.1"
+                    step="0.1"
                     value={liquidity}
                     onChange={e => setLiquidity(e.target.value)}
                     style={{
