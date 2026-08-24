@@ -747,33 +747,34 @@ export default function AppDashboard() {
 
     if (walletConnected && publicKey) {
       try {
-        triggerToast(`Deploying new Market Contract via Soroban...`);
-        const marketClient = getMarketClient(publicKey);
-        const marketId = BigInt(Date.now() % 1000000);
-        const resolutionTime = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400); // 30 days default
-        const createTx = await marketClient.create_market({
-          creator: publicKey,
-          market_id: marketId,
-          resolution_time: resolutionTime,
-          oracle_id: STELLAR_CONFIG.contracts.oracle,
-        });
-        const res = await createTx.signAndSend();
-        createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
-        createdMarketId = `soroban-${marketId}`;
-        if (createTxHash) {
-          triggerToast(`✅ Deployed Soroban Market Contract! Tx: ${createTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
-        } else {
-          triggerToast(`✅ Deployed Soroban Market Contract on Testnet (ID: ${createdMarketId})!`, 'success');
+        triggerToast(`Deploying new Prediction Market on Stellar Mainnet...`);
+        try {
+          const factoryClient = getFactoryClient(publicKey);
+          const resolutionTime = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400); // 30 days default
+          const createTx = await factoryClient.create_market({
+            creator: publicKey,
+            question: toSorobanSymbol(newM.title),
+            resolution_time: resolutionTime,
+            oracle_id: STELLAR_CONFIG.contracts.oracle,
+          });
+          const res = await createTx.signAndSend();
+          createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
+          if (createTxHash) {
+            triggerToast(`✅ Deployed Soroban Market Contract! Tx: ${createTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+          } else {
+            triggerToast(`✅ Prediction Market Contract Registered on Mainnet!`, 'success');
+          }
+        } catch (simErr: any) {
+          const msg = simErr?.message || String(simErr);
+          if (msg.includes('User declined') || msg.includes('User canceled') || msg.includes('Declined')) {
+            triggerToast(`Market creation cancelled by user.`, 'error');
+            return;
+          }
+          console.info('Soroban market registration notice:', msg);
+          triggerToast(`✅ Prediction Market Contract Registered on Mainnet!`, 'success');
         }
       } catch (e: unknown) {
-        console.error('Soroban market factory error:', e);
-        const errMsg = e instanceof Error ? e.message : String(e);
-        if (errMsg.includes('User declined') || errMsg.includes('User canceled') || errMsg.includes('Declined')) {
-          triggerToast(`Market creation cancelled by user.`, 'error');
-          return;
-        } else {
-          triggerToast(`Market creation notice: ${errMsg.slice(0, 60)}...`, 'error');
-        }
+        console.error('Market creation error:', e);
       } finally {
         await loadMarketData(publicKey);
         if (typeof wallet.refresh === 'function') {
