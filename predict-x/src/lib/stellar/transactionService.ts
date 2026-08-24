@@ -29,6 +29,18 @@ export class BlockchainError extends Error {
  * Normalizes blockchain errors into human-readable messages
  */
 export function normalizeStellarError(error: any): BlockchainError {
+  const resultCodes = error?.response?.data?.extras?.result_codes;
+  if (resultCodes) {
+    const codesStr = JSON.stringify(resultCodes);
+    if (codesStr.includes('op_no_destination')) {
+      return new BlockchainError('Destination account does not exist on Stellar Mainnet yet.', 'NO_DESTINATION');
+    }
+    if (codesStr.includes('op_underfunded') || codesStr.includes('op_low_reserve')) {
+      return new BlockchainError('Insufficient XLM balance in your Stellar wallet.', 'INSUFFICIENT_BALANCE');
+    }
+    return new BlockchainError(`Stellar Horizon transaction rejected: ${codesStr}`, 'HORIZON_REJECTED');
+  }
+
   const msg = typeof error === 'string' ? error : error?.message || String(error);
 
   if (msg.includes('User declined') || msg.includes('User canceled') || msg.includes('Declined')) {
@@ -122,17 +134,30 @@ export async function executeMainnetPayment({
     const server = new Horizon.Server(STELLAR_CONFIG.horizonUrl);
     const account = await server.loadAccount(userPublicKey);
 
-    const builder = new TransactionBuilder(account, {
-      fee: '10000',
-      networkPassphrase: STELLAR_CONFIG.networkPassphrase,
-    })
-      .addOperation(
-        Operation.payment({
+    // Check if targetDestination account exists on Stellar Mainnet ledger
+    let isDestinationFunded = true;
+    try {
+      await server.loadAccount(targetDestination);
+    } catch {
+      isDestinationFunded = false;
+    }
+
+    const op = isDestinationFunded
+      ? Operation.payment({
           destination: targetDestination,
           asset: Asset.native(),
           amount: amountXlm.toFixed(7),
         })
-      )
+      : Operation.createAccount({
+          destination: targetDestination,
+          startingBalance: amountXlm.toFixed(7),
+        });
+
+    const builder = new TransactionBuilder(account, {
+      fee: '10000',
+      networkPassphrase: STELLAR_CONFIG.networkPassphrase,
+    })
+      .addOperation(op)
       .setTimeout(180);
 
     const tx = builder.build();
