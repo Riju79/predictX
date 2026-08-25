@@ -63,6 +63,34 @@ export function normalizeStellarError(error: any): BlockchainError {
 }
 
 /**
+ * Defensive pre-flight parameter validation for create_market on Mainnet
+ * Deployed MarketFactory Contract expects 4 parameters:
+ * 1. creator: Address (G...)
+ * 2. question: Symbol (string <= 32 chars)
+ * 3. resolution_time: u64 (bigint timestamp in seconds)
+ * 4. oracle_id: Address (C...)
+ */
+export function validateCreateMarketArgs(args: {
+  creator: string;
+  question: string;
+  resolution_time: bigint;
+  oracle_id: string;
+}): void {
+  if (!args.creator || !args.creator.startsWith('G')) {
+    throw new BlockchainError('Invalid creator address. Must be a valid Stellar account key starting with G.', 'INVALID_ARGUMENT');
+  }
+  if (!args.question || typeof args.question !== 'string' || args.question.length === 0 || args.question.length > 32) {
+    throw new BlockchainError('Invalid question symbol. Must be a string between 1 and 32 characters.', 'INVALID_ARGUMENT');
+  }
+  if (typeof args.resolution_time !== 'bigint' || args.resolution_time <= 0n) {
+    throw new BlockchainError('Invalid resolution_time. Must be a positive u64 Unix timestamp in seconds.', 'INVALID_ARGUMENT');
+  }
+  if (!args.oracle_id || !args.oracle_id.startsWith('C')) {
+    throw new BlockchainError('Invalid oracle_id address. Must be a valid Soroban contract address starting with C.', 'INVALID_ARGUMENT');
+  }
+}
+
+/**
  * Fetch exact spendable XLM balance from Stellar Mainnet Horizon
  */
 export async function fetchMainnetXlmBalance(publicKey: string): Promise<number> {
