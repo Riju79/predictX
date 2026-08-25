@@ -47,7 +47,7 @@ export interface Client {
   get_balance: ({user, market_id, outcome}: {user: string, market_id: u64, outcome: Outcome}, options?: MethodOptions) => Promise<AssembledTransaction<i128>>;
   lock_market: ({market_id}: {market_id: u64}, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
   sell_shares: ({user, market_id, outcome, shares}: {user: string, market_id: u64, outcome: Outcome, shares: i128}, options?: MethodOptions) => Promise<AssembledTransaction<i128>>;
-  create_market: ({creator, market_id, resolution_time, oracle_id}: {creator: string, market_id: u64, resolution_time: u64, oracle_id: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
+  create_market: ({market_id, resolution_time, oracle_id}: {market_id: u64, resolution_time: u64, oracle_id: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
   claim_winnings: ({user, market_id}: {user: string, market_id: u64}, options?: MethodOptions) => Promise<AssembledTransaction<i128>>;
   resolve_market: ({market_id, outcome}: {market_id: u64, outcome: Outcome}, options?: MethodOptions) => Promise<AssembledTransaction<null>>;
   get_market_state: ({market_id}: {market_id: u64}, options?: MethodOptions) => Promise<AssembledTransaction<MarketState>>;

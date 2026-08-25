@@ -755,7 +755,6 @@ export default function AppDashboard() {
 
       // 1. Invoke Soroban Market Contract directly to initialize market state on-chain
       const createTx = await marketClient.create_market({
-        creator: publicKey,
         market_id: nextNumericId,
         resolution_time: expirationTime,
         oracle_id: STELLAR_CONFIG.contracts.oracle,
