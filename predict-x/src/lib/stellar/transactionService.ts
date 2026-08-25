@@ -165,9 +165,13 @@ export async function executeMainnetPayment({
   }
 
   // 2. Ensure valid Stellar G-Address for native XLM payment operation
-  const targetDestination = (destinationAddress && destinationAddress.startsWith('G'))
-    ? destinationAddress
-    : STELLAR_CONFIG.treasury;
+  if (!destinationAddress || !destinationAddress.startsWith('G')) {
+    throw new BlockchainError(
+      `Invalid payment destination address (${destinationAddress}). XLM payments require a valid Stellar G-Address destination.`,
+      'INVALID_DESTINATION'
+    );
+  }
+  const targetDestination = destinationAddress;
 
   try {
     console.log('[Stellar Mainnet Pipeline] Preparing payment operation...');
