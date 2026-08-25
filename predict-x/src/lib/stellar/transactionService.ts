@@ -6,6 +6,7 @@ import {
   Operation,
   Asset,
   Networks,
+  xdr,
 } from '@stellar/stellar-sdk';
 import { STELLAR_CONFIG } from '@/src/config/stellar';
 
@@ -284,6 +285,81 @@ export async function executeMainnetPayment({
     };
   } catch (err: any) {
     console.error('[Stellar Mainnet Pipeline Error]:', err);
+    throw normalizeStellarError(err);
+  }
+}
+
+/**
+ * Direct Soroban Contract Invocation launcher via Freighter signature
+ */
+export async function executeSorobanContractTx(params: {
+  userPublicKey: string;
+  contractId: string;
+  functionName: string;
+  args: xdr.ScVal[];
+}): Promise<TransactionResult> {
+  const { userPublicKey, contractId, functionName, args } = params;
+
+  try {
+    console.log('[Stellar Mainnet Pipeline] Preparing Soroban contract call...');
+    console.log(' - User:', userPublicKey);
+    console.log(' - Contract ID:', contractId);
+    console.log(' - Function:', functionName);
+
+    const server = new Horizon.Server(STELLAR_CONFIG.horizonUrl);
+    const account = await server.loadAccount(userPublicKey);
+
+    const operation = Operation.invokeContractFunction({
+      contract: contractId,
+      function: functionName,
+      args: args,
+    });
+
+    const tx = new TransactionBuilder(account, {
+      fee: '100000',
+      networkPassphrase: STELLAR_CONFIG.networkPassphrase,
+    })
+      .addOperation(operation)
+      .setTimeout(180)
+      .build();
+
+    const xdrString = tx.toXDR();
+
+    console.log('[Stellar Mainnet Pipeline] Requesting Freighter Wallet Signature...');
+    const signedRes = await signTransaction(xdrString, {
+      networkPassphrase: STELLAR_CONFIG.networkPassphrase,
+    });
+
+    let signedXdr =
+      typeof signedRes === 'string' ? signedRes : (signedRes as any)?.signedTxXdr || (signedRes as any)?.signedXdr;
+
+    if (!signedXdr && typeof signedRes === 'object' && signedRes !== null) {
+      for (const val of Object.values(signedRes)) {
+        if (typeof val === 'string' && val.length > 50 && val.startsWith('AAAA')) {
+          signedXdr = val;
+          break;
+        }
+      }
+    }
+
+    if (!signedXdr) {
+      throw new BlockchainError('User declined transaction in Freighter wallet.', 'USER_DECLINED');
+    }
+
+    console.log('[Stellar Mainnet Pipeline] Submitting signed Soroban transaction to Horizon Mainnet...');
+    const signedTx = TransactionBuilder.fromXDR(signedXdr, STELLAR_CONFIG.networkPassphrase);
+    const response = await server.submitTransaction(signedTx);
+
+    const explorerUrl = `https://stellar.expert/explorer/public/tx/${response.hash}`;
+
+    return {
+      success: true,
+      txHash: response.hash,
+      explorerUrl,
+      ledgerSequence: response.ledger,
+    };
+  } catch (err: any) {
+    console.error('[Stellar Mainnet Soroban Error]:', err);
     throw normalizeStellarError(err);
   }
 }

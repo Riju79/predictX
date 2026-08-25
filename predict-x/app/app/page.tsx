@@ -17,8 +17,8 @@ import { t, fontBody, fontDisplay, fontMono } from './tokens';
 import { useWallet } from '@/src/wallet';
 import { Outcome } from '@/src/bindings/market';
 import { signTransaction } from '@stellar/freighter-api';
-import { TransactionBuilder, Operation, Horizon, Networks, Asset } from '@stellar/stellar-sdk';
-import { executeMainnetPayment, fetchMainnetXlmBalance, normalizeStellarError, validateCreateMarketArgs } from '@/src/lib/stellar/transactionService';
+import { TransactionBuilder, Operation, Horizon, Networks, Asset, Address, xdr } from '@stellar/stellar-sdk';
+import { executeMainnetPayment, fetchMainnetXlmBalance, normalizeStellarError, validateCreateMarketArgs, executeSorobanContractTx } from '@/src/lib/stellar/transactionService';
 import { 
   STELLAR_CONFIG, 
   toRawAmount, 
@@ -748,7 +748,6 @@ export default function AppDashboard() {
       setIsSubmittingTx(true);
       triggerToast(`Please sign Market Creation in Freighter Wallet...`);
 
-      const factoryClient = getFactoryClient(publicKey);
       const questionSymbol = toSorobanSymbol(newM.title);
       const expirationTime = BigInt(Math.floor(Date.now() / 1000) + 86400 * 30);
 
@@ -760,20 +759,24 @@ export default function AppDashboard() {
         oracle_id: STELLAR_CONFIG.contracts.oracle,
       });
 
-      // 1. Invoke Soroban MarketFactory Contract on Mainnet with 4 exact parameters
-      const createTx = await factoryClient.create_market({
-        creator: publicKey,
-        question: questionSymbol,
-        resolution_time: expirationTime,
-        oracle_id: STELLAR_CONFIG.contracts.oracle,
+      // 1. Build exact 4-parameter Soroban XDR ScVals for MarketFactory.create_market
+      const scValArgs = [
+        new Address(publicKey).toScVal(),
+        xdr.ScVal.scvSymbol(questionSymbol),
+        xdr.ScVal.scvU64(new xdr.Uint64(expirationTime)),
+        new Address(STELLAR_CONFIG.contracts.oracle).toScVal(),
+      ];
+
+      // 2. Launch transaction directly through Freighter Wallet
+      const txRes = await executeSorobanContractTx({
+        userPublicKey: publicKey,
+        contractId: STELLAR_CONFIG.contracts.factory,
+        functionName: 'create_market',
+        args: scValArgs,
       });
 
-      try {
-        const createRes = await createTx.signAndSend();
-        createTxHash = (createRes as any)?.sendTransactionResponse?.hash || (createRes as any)?.hash;
-      } catch (simNotice: any) {
-        console.info('Soroban create_market simulation info:', simNotice?.message || simNotice);
-        createTxHash = `tx-${Date.now()}`;
+      if (txRes.success && txRes.txHash) {
+        createTxHash = txRes.txHash;
       }
 
       if (createTxHash) {
