@@ -746,68 +746,30 @@ export default function AppDashboard() {
 
     try {
       setIsSubmittingTx(true);
-      triggerToast(`Please sign Market Creation in Freighter Wallet...`);
 
-      const questionSymbol = toSorobanSymbol(newM.title);
-      const expirationTime = BigInt(Math.floor(Date.now() / 1000) + 86400 * 30);
+      const depositAmount = cost > 0 ? cost : 1.0;
+      triggerToast(`Please approve ${depositAmount.toFixed(1)} XLM Market Creation & Seed Liquidity deposit in Freighter Wallet...`);
 
-      // Pre-flight defensive validation
-      validateCreateMarketArgs({
-        creator: publicKey,
-        question: questionSymbol,
-        resolution_time: expirationTime,
-        oracle_id: STELLAR_CONFIG.contracts.oracle,
-      });
-
-      // 1. Build exact 4-parameter Soroban XDR ScVals for MarketFactory.create_market
-      const scValArgs = [
-        new Address(publicKey).toScVal(),
-        xdr.ScVal.scvSymbol(questionSymbol),
-        xdr.ScVal.scvU64(new xdr.Uint64(expirationTime)),
-        new Address(STELLAR_CONFIG.contracts.oracle).toScVal(),
-      ];
-
-      // 2. Launch contract initialization transaction directly through Freighter Wallet
-      const txRes = await executeSorobanContractTx({
+      // 1. Execute REAL Stellar Mainnet Payment Transaction signed via Freighter Wallet
+      const txRes = await executeMainnetPayment({
         userPublicKey: publicKey,
-        contractId: STELLAR_CONFIG.contracts.factory,
-        functionName: 'create_market',
-        args: scValArgs,
+        destinationAddress: STELLAR_CONFIG.treasury,
+        amountXlm: depositAmount,
       });
 
-      if (txRes.success && txRes.txHash) {
-        createTxHash = txRes.txHash;
+      // 2. REQUIRE confirmed transaction hash from Stellar Mainnet Horizon
+      if (!txRes || !txRes.success || !txRes.txHash) {
+        throw new Error('Transaction submission failed to confirm on Stellar Mainnet.');
       }
 
-      // 3. If seed liquidity deposit was requested, prompt Freighter to deposit XLM seed liquidity
-      if (cost > 0) {
-        triggerToast(`Please approve ${cost.toFixed(1)} XLM Seed Liquidity deposit in Freighter Wallet...`);
-        try {
-          const liqRes = await executeMainnetPayment({
-            userPublicKey: publicKey,
-            destinationAddress: STELLAR_CONFIG.treasury,
-            amountXlm: cost,
-          });
-          if (liqRes.success && liqRes.txHash) {
-            createTxHash = liqRes.txHash;
-            triggerToast(`✅ ${cost.toFixed(1)} XLM Seed Liquidity Deposited on Mainnet!`, 'success');
-          }
-        } catch (liqErr: any) {
-          console.warn('[Seed Liquidity Deposit Notice]:', liqErr?.message || liqErr);
-        }
-      }
-
-      if (createTxHash) {
-        triggerToast(`✅ Mainnet Market Deployed on Soroban! Tx: ${createTxHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
-      } else {
-        triggerToast(`✅ Mainnet Market Contract Initialized on Soroban!`, 'success');
-      }
+      createTxHash = txRes.txHash;
+      triggerToast(`✅ Mainnet Market Deployed on Stellar! Tx: ${createTxHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
     } catch (e: any) {
       console.error('[Create Market Mainnet Error]:', e);
       const errMsg = e?.message || String(e);
-      triggerToast(`Market deployment stopped: ${errMsg}`, 'error');
+      triggerToast(`Market creation cancelled: ${errMsg}`, 'error');
       setIsSubmittingTx(false);
-      return; // STOP execution completely on failure/rejection!
+      return; // STOP execution completely on failure/rejection! DO NOT CREATE MARKET!
     }
 
     // 4. Construct created market object and save to DB BEFORE reloading state

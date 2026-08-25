@@ -354,28 +354,16 @@ export async function executeSorobanContractTx(params: {
       throw new BlockchainError('User declined transaction in Freighter wallet.', 'USER_DECLINED');
     }
 
-    console.log('[Stellar Mainnet Pipeline] Submitting signed Soroban transaction to Horizon Mainnet...');
-    try {
-      const signedTx = TransactionBuilder.fromXDR(signedXdr, STELLAR_CONFIG.networkPassphrase);
-      const response = await server.submitTransaction(signedTx);
-      const explorerUrl = `https://stellar.expert/explorer/public/tx/${response.hash}`;
+    const signedTx = TransactionBuilder.fromXDR(signedXdr, STELLAR_CONFIG.networkPassphrase);
+    const response = await server.submitTransaction(signedTx);
+    const explorerUrl = `https://stellar.expert/explorer/public/tx/${response.hash}`;
 
-      return {
-        success: true,
-        txHash: response.hash,
-        explorerUrl,
-        ledgerSequence: response.ledger,
-      };
-    } catch (subErr: any) {
-      console.warn('[Horizon Submission Warning]:', subErr?.message || subErr);
-      const mockHash = `tx-${Date.now()}`;
-      return {
-        success: true,
-        txHash: mockHash,
-        explorerUrl: `https://stellar.expert/explorer/public/tx/${mockHash}`,
-        ledgerSequence: 0,
-      };
-    }
+    return {
+      success: true,
+      txHash: response.hash,
+      explorerUrl,
+      ledgerSequence: response.ledger,
+    };
   } catch (err: any) {
     console.error('[Stellar Mainnet Soroban Error]:', err);
     throw normalizeStellarError(err);
