@@ -767,7 +767,7 @@ export default function AppDashboard() {
         new Address(STELLAR_CONFIG.contracts.oracle).toScVal(),
       ];
 
-      // 2. Launch transaction directly through Freighter Wallet
+      // 2. Launch contract initialization transaction directly through Freighter Wallet
       const txRes = await executeSorobanContractTx({
         userPublicKey: publicKey,
         contractId: STELLAR_CONFIG.contracts.factory,
@@ -777,6 +777,24 @@ export default function AppDashboard() {
 
       if (txRes.success && txRes.txHash) {
         createTxHash = txRes.txHash;
+      }
+
+      // 3. If seed liquidity deposit was requested, prompt Freighter to deposit XLM seed liquidity
+      if (cost > 0) {
+        triggerToast(`Please approve ${cost.toFixed(1)} XLM Seed Liquidity deposit in Freighter Wallet...`);
+        try {
+          const liqRes = await executeMainnetPayment({
+            userPublicKey: publicKey,
+            destinationAddress: STELLAR_CONFIG.treasury,
+            amountXlm: cost,
+          });
+          if (liqRes.success && liqRes.txHash) {
+            createTxHash = liqRes.txHash;
+            triggerToast(`✅ ${cost.toFixed(1)} XLM Seed Liquidity Deposited on Mainnet!`, 'success');
+          }
+        } catch (liqErr: any) {
+          console.warn('[Seed Liquidity Deposit Notice]:', liqErr?.message || liqErr);
+        }
       }
 
       if (createTxHash) {
@@ -790,14 +808,9 @@ export default function AppDashboard() {
       triggerToast(`Market deployment stopped: ${errMsg}`, 'error');
       setIsSubmittingTx(false);
       return; // STOP execution completely on failure/rejection!
-    } finally {
-      setIsSubmittingTx(false);
-      await loadMarketData(publicKey);
-      if (typeof wallet.refresh === 'function') {
-        await wallet.refresh();
-      }
     }
 
+    // 4. Construct created market object and save to DB BEFORE reloading state
     const createdMarket: Market = {
       id: createdMarketId,
       ic: newM.ic,
@@ -812,11 +825,6 @@ export default function AppDashboard() {
       history: generateInitialHistory(newM.outcomes),
     };
 
-    // Save custom market permanently
-    api.saveCustomMarket(createdMarket).catch(e => console.warn('saveCustomMarket failed:', e));
-
-    setMarkets(prev => [createdMarket, ...prev]);
-
     const createdEntry: CreatedMarketEntry = {
       id: createdMarket.id,
       title: newM.title,
@@ -827,14 +835,20 @@ export default function AppDashboard() {
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
+    // Save custom market PERMANENTLY to database
+    await api.saveCustomMarket(createdMarket).catch(e => console.warn('saveCustomMarket failed:', e));
     if (publicKey) {
-      api.saveCreatedMarket({
-        ...createdEntry,
-        creatorAddress: publicKey,
-      }).catch(e => console.warn('saveCreatedMarket failed:', e));
+      await api.saveCreatedMarket({ ...createdEntry, creatorAddress: publicKey }).catch(e => console.warn('saveCreatedMarket failed:', e));
     }
 
-    // Record created market entry
+    setMarkets(prev => [createdMarket, ...prev]);
+
+    // 5. Cleanup state and refresh wallet & market data
+    setIsSubmittingTx(false);
+    await loadMarketData(publicKey);
+    if (typeof wallet.refresh === 'function') {
+      await wallet.refresh();
+    }
     setCreatedMarkets(prev => [createdEntry, ...prev]);
   };
 
