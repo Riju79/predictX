@@ -748,16 +748,15 @@ export default function AppDashboard() {
       setIsSubmittingTx(true);
       triggerToast(`Please sign Market Creation in Freighter Wallet...`);
 
-      const factoryClient = getFactoryClient(publicKey);
       const marketClient = getMarketClient(publicKey);
       const rawCost = toRawAmount(cost);
-      const questionSymbol = toSorobanSymbol(newM.title);
+      const nextNumericId = BigInt(Date.now() % 1000000);
       const expirationTime = BigInt(Math.floor(Date.now() / 1000) + 86400 * 30);
 
-      // 1. Invoke Soroban MarketFactory Contract to deploy market state on-chain
-      const createTx = await factoryClient.create_market({
+      // 1. Invoke Soroban Market Contract directly to initialize market state on-chain
+      const createTx = await marketClient.create_market({
         creator: publicKey,
-        question: questionSymbol,
+        market_id: nextNumericId,
         resolution_time: expirationTime,
         oracle_id: STELLAR_CONFIG.contracts.oracle,
       });
@@ -768,10 +767,9 @@ export default function AppDashboard() {
       // 2. Deposit seed liquidity directly into Soroban Market Contract pool
       if (rawCost > 0n) {
         try {
-          const newMarketId = (createRes as any)?.result ? BigInt(String((createRes as any).result)) : 1n;
           const liqTx = await marketClient.add_liquidity({
             user: publicKey,
-            market_id: newMarketId,
+            market_id: nextNumericId,
             amount: rawCost,
           });
           const liqRes = await liqTx.signAndSend();
