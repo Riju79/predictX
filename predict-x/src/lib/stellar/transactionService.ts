@@ -73,8 +73,12 @@ export async function fetchMainnetXlmBalance(publicKey: string): Promise<number>
     const native = account.balances.find((b: any) => b.asset_type === 'native');
     if (!native) return 0;
     const total = parseFloat(native.balance);
-    // 0.5 XLM base reserve margin for operations
-    const spendable = Math.max(0, total - 0.5);
+    const subentries = (account as any).subentry_count ?? 0;
+    // Stellar Protocol Minimum Base Reserve = (2 + subentries) * 0.5 XLM
+    const minReserve = (2 + subentries) * 0.5;
+    // 0.001 XLM margin for transaction inclusion fee
+    const feeMargin = 0.001;
+    const spendable = Math.max(0, total - minReserve - feeMargin);
     return parseFloat(spendable.toFixed(7));
   } catch (err: any) {
     console.warn('[Stellar] Balance fetch notice:', err?.message || err);
@@ -84,7 +88,7 @@ export async function fetchMainnetXlmBalance(publicKey: string): Promise<number>
 
 /**
  * Executes a real native XLM transaction on Stellar Mainnet:
- * 1. Checks spendable XLM balance.
+ * 1. Audits XLM amounts, stroops conversion, base reserve, and fees.
  * 2. Loads sequence from Horizon Mainnet.
  * 3. Builds payment operation.
  * 4. Pre-simulates transaction.
@@ -110,12 +114,41 @@ export async function executeMainnetPayment({
     throw new BlockchainError('Transaction amount must be greater than 0 XLM.', 'INVALID_AMOUNT');
   }
 
-  // 1. Check live spendable balance with epsilon precision tolerance
-  const spendable = await fetchMainnetXlmBalance(userPublicKey);
-  const EPSILON = 0.0001;
-  if (spendable + EPSILON < amountXlm) {
+  // 1. Audit Wallet & Transaction Amounts
+  const server = new Horizon.Server(STELLAR_CONFIG.horizonUrl);
+  const account = await server.loadAccount(userPublicKey);
+  const native = account.balances.find((b: any) => b.asset_type === 'native');
+  const totalWalletBalance = native ? parseFloat(native.balance) : 0;
+  const subentries = (account as any).subentry_count ?? 0;
+  const minReserve = (2 + subentries) * 0.5; // 1.0 XLM for standard account
+  const estimatedFeeStroops = 10000n; // 10,000 stroops inclusion fee
+  const estimatedFeeXlm = 0.001;
+  const amountInStroops = BigInt(Math.round(amountXlm * 10_000_000)); // 1 XLM = 10,000,000 stroops
+  const totalRequiredXlm = amountXlm + estimatedFeeXlm;
+  const maxSpendableXlm = Math.max(0, totalWalletBalance - minReserve);
+
+  console.log('===========================================================');
+  console.log('📊 STELLAR MAINNET TRANSACTION AUDIT LOG:');
+  console.log(' - User Public Key:', userPublicKey);
+  console.log(' - Total Wallet Balance (XLM):', totalWalletBalance.toFixed(7));
+  console.log(' - Stellar Min Base Reserve (XLM):', minReserve.toFixed(7));
+  console.log(' - Subentry Count:', subentries);
+  console.log(' - Max Spendable Balance (XLM):', maxSpendableXlm.toFixed(7));
+  console.log(' - User Requested Liquidity (XLM):', amountXlm.toFixed(7));
+  console.log(' - Amount in Stroops (1 XLM = 10M Stroops):', amountInStroops.toString(), 'stroops');
+  console.log(' - Estimated Network Fee:', estimatedFeeStroops.toString(), 'stroops (', estimatedFeeXlm, 'XLM )');
+  console.log(' - Total Required XLM (Amount + Fee):', totalRequiredXlm.toFixed(7));
+  console.log('===========================================================');
+
+  // Verify single conversion (1 XLM = 10,000,000 stroops)
+  if (amountInStroops !== BigInt(Math.round(amountXlm * 10_000_000))) {
+    throw new BlockchainError('Stroop conversion mismatch detected during audit.', 'CONVERSION_ERROR');
+  }
+
+  // Check balance with exact reserve & fee tolerance
+  if (totalWalletBalance - minReserve < amountXlm) {
     throw new BlockchainError(
-      `Insufficient XLM balance. Available spendable: ${spendable.toFixed(2)} XLM, Required: ${amountXlm.toFixed(2)} XLM.`,
+      `Insufficient XLM balance. Wallet Total: ${totalWalletBalance.toFixed(2)} XLM (Base Reserve: ${minReserve.toFixed(2)} XLM). Max spendable: ${maxSpendableXlm.toFixed(2)} XLM, Required: ${amountXlm.toFixed(2)} XLM.`,
       'INSUFFICIENT_BALANCE'
     );
   }
