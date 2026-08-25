@@ -114,30 +114,35 @@ export async function executeMainnetPayment({
     throw new BlockchainError('Transaction amount must be greater than 0 XLM.', 'INVALID_AMOUNT');
   }
 
-  // 1. Audit Wallet & Transaction Amounts
+  // 1. Audit Wallet & Transaction Amounts with Exact Account Ledger State
   const server = new Horizon.Server(STELLAR_CONFIG.horizonUrl);
   const account = await server.loadAccount(userPublicKey);
   const native = account.balances.find((b: any) => b.asset_type === 'native');
   const totalWalletBalance = native ? parseFloat(native.balance) : 0;
   const subentries = (account as any).subentry_count ?? 0;
-  const minReserve = (2 + subentries) * 0.5; // 1.0 XLM for standard account
-  const estimatedFeeStroops = 10000n; // 10,000 stroops inclusion fee
-  const estimatedFeeXlm = 0.001;
-  const amountInStroops = BigInt(Math.round(amountXlm * 10_000_000)); // 1 XLM = 10,000,000 stroops
-  const totalRequiredXlm = amountXlm + estimatedFeeXlm;
-  const maxSpendableXlm = Math.max(0, totalWalletBalance - minReserve);
+
+  // Calculate dynamic Stellar Protocol Base Reserve based on account subentries
+  // 0.5 XLM per subentry + 1.0 XLM account minimum base reserve
+  const requiredReserve = (2 + subentries) * 0.5;
+
+  // 100 stroops (0.0000100 XLM) standard Stellar network fee
+  const estimatedFeeStroops = 100n;
+  const estimatedTransactionCosts = 0.00001;
+
+  const amountInStroops = BigInt(Math.round(amountXlm * 10_000_000));
+  const availableForLiquidity = Math.max(0, totalWalletBalance - requiredReserve - estimatedTransactionCosts);
 
   console.log('===========================================================');
   console.log('📊 STELLAR MAINNET TRANSACTION AUDIT LOG:');
-  console.log(' - User Public Key:', userPublicKey);
-  console.log(' - Total Wallet Balance (XLM):', totalWalletBalance.toFixed(7));
-  console.log(' - Stellar Min Base Reserve (XLM):', minReserve.toFixed(7));
-  console.log(' - Subentry Count:', subentries);
-  console.log(' - Max Spendable Balance (XLM):', maxSpendableXlm.toFixed(7));
-  console.log(' - User Requested Liquidity (XLM):', amountXlm.toFixed(7));
-  console.log(' - Amount in Stroops (1 XLM = 10M Stroops):', amountInStroops.toString(), 'stroops');
-  console.log(' - Estimated Network Fee:', estimatedFeeStroops.toString(), 'stroops (', estimatedFeeXlm, 'XLM )');
-  console.log(' - Total Required XLM (Amount + Fee):', totalRequiredXlm.toFixed(7));
+  console.log(' - 1. User Public Address:', userPublicKey);
+  console.log(' - 2. Total Wallet Balance (XLM):', totalWalletBalance.toFixed(7));
+  console.log(' - 3. Actual Required Base Reserve (XLM):', requiredReserve.toFixed(7));
+  console.log(' - 4. Account Subentries Count:', subentries);
+  console.log(' - 5. Intended Liquidity Amount (XLM):', amountXlm.toFixed(7));
+  console.log(' - 6. Amount in Stroops (1 XLM = 10M Stroops):', amountInStroops.toString(), 'stroops');
+  console.log(' - 7. Estimated Network Fee (XLM):', estimatedTransactionCosts.toFixed(7));
+  console.log(' - 8. True Available for Liquidity (XLM):', availableForLiquidity.toFixed(7));
+  console.log(' - 9. Liquidity <= Available check:', amountXlm <= availableForLiquidity);
   console.log('===========================================================');
 
   // Verify single conversion (1 XLM = 10,000,000 stroops)
@@ -145,10 +150,16 @@ export async function executeMainnetPayment({
     throw new BlockchainError('Stroop conversion mismatch detected during audit.', 'CONVERSION_ERROR');
   }
 
-  // Check balance with exact reserve & fee tolerance
-  if (totalWalletBalance - minReserve < amountXlm) {
+  // ONLY reject when liquidityAmount > availableForLiquidity
+  if (amountXlm > availableForLiquidity) {
+    const shortfall = (amountXlm - availableForLiquidity).toFixed(7);
     throw new BlockchainError(
-      `Insufficient XLM balance. Wallet Total: ${totalWalletBalance.toFixed(2)} XLM (Base Reserve: ${minReserve.toFixed(2)} XLM). Max spendable: ${maxSpendableXlm.toFixed(2)} XLM, Required: ${amountXlm.toFixed(2)} XLM.`,
+      `Insufficient XLM balance for ${amountXlm.toFixed(2)} XLM liquidity deposit.\n` +
+      `• Wallet Total: ${totalWalletBalance.toFixed(7)} XLM\n` +
+      `• Stellar Base Reserve: ${requiredReserve.toFixed(7)} XLM\n` +
+      `• Estimated Fee: ${estimatedTransactionCosts.toFixed(7)} XLM\n` +
+      `• True Available for Liquidity: ${availableForLiquidity.toFixed(7)} XLM\n` +
+      `• Exact Shortfall: ${shortfall} XLM needed.`,
       'INSUFFICIENT_BALANCE'
     );
   }
