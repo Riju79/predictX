@@ -73,8 +73,8 @@ export async function fetchMainnetXlmBalance(publicKey: string): Promise<number>
     const native = account.balances.find((b: any) => b.asset_type === 'native');
     if (!native) return 0;
     const total = parseFloat(native.balance);
-    // 1.0 XLM base reserve
-    const spendable = Math.max(0, total - 1.0);
+    // 0.5 XLM base reserve margin for operations
+    const spendable = Math.max(0, total - 0.5);
     return parseFloat(spendable.toFixed(7));
   } catch (err: any) {
     console.warn('[Stellar] Balance fetch notice:', err?.message || err);
@@ -110,9 +110,10 @@ export async function executeMainnetPayment({
     throw new BlockchainError('Transaction amount must be greater than 0 XLM.', 'INVALID_AMOUNT');
   }
 
-  // 1. Check live spendable balance
+  // 1. Check live spendable balance with epsilon precision tolerance
   const spendable = await fetchMainnetXlmBalance(userPublicKey);
-  if (spendable < amountXlm) {
+  const EPSILON = 0.0001;
+  if (spendable + EPSILON < amountXlm) {
     throw new BlockchainError(
       `Insufficient XLM balance. Available spendable: ${spendable.toFixed(2)} XLM, Required: ${amountXlm.toFixed(2)} XLM.`,
       'INSUFFICIENT_BALANCE'
