@@ -44,18 +44,18 @@ const MARKET_NUMERIC_ID = 0n;
  * For legacy/hardcoded markets without on-chain presence, returns 0n (will fail gracefully).
  */
 const getOnChainMarketId = (marketId?: string): bigint => {
-  if (!marketId) return 0n;
+  if (!marketId) return 1n;
   // If market ID starts with 'onchain-', extract the numeric part
   if (marketId.startsWith('onchain-')) {
     const num = marketId.replace('onchain-', '');
-    try { return BigInt(num); } catch { return 0n; }
+    try { return BigInt(num); } catch { return 1n; }
   }
-  // If market ID is purely numeric, use it directly
+  // If market ID is purely numeric and within sequential range (<= 10 digits), use it directly
   const stripped = marketId.replace(/[^0-9]/g, '');
-  if (stripped.length > 0) {
-    try { return BigInt(stripped); } catch { return 0n; }
+  if (stripped.length > 0 && stripped.length <= 10) {
+    try { return BigInt(stripped); } catch { return 1n; }
   }
-  return 0n;
+  return 1n;
 };
 
 /* ── Helper to generate initial history series ── */
