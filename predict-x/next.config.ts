@@ -18,20 +18,6 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  async redirects() {
-    return [
-      {
-        source: '/docs',
-        destination: process.env.NEXT_PUBLIC_DOCS_URL || 'http://localhost:3001',
-        permanent: false,
-      },
-      {
-        source: '/docs/:path*',
-        destination: `${process.env.NEXT_PUBLIC_DOCS_URL || 'http://localhost:3001'}/:path*`,
-        permanent: false,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
