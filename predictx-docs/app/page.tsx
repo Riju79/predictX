@@ -33,7 +33,7 @@ interface NavGroup {
   singleId?: DocSection;
 }
 
-const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL || 'http://localhost:3000';
+const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL || 'https://predict-x-gray.vercel.app/app';
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState<DocSection>('introduction');
