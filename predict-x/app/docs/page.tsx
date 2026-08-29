@@ -354,6 +354,98 @@ export default function DocsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* ⚡ REAL ON-CHAIN TRANSACTION ACTIVITY SECTION */}
+              <div style={{
+                background: '#0D1117', border: '1px solid #1F293D', borderRadius: 14, padding: 24, marginBottom: 32
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F8FAFC', margin: 0 }}>
+                      ⚡ Real On-Chain Mainnet Transaction Activity
+                    </h3>
+                    <div style={{ fontSize: 12.5, color: '#94A3B8', marginTop: 4, fontFamily: 'monospace' }}>
+                      Contract: <span style={{ color: '#38BDF8' }}>CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <span style={{ background: 'rgba(52, 211, 153, 0.12)', color: '#34D399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
+                      1.45 XLM Balance
+                    </span>
+                    <span style={{ background: 'rgba(129, 140, 248, 0.12)', color: '#A5B4FC', border: '1px solid rgba(129, 140, 248, 0.3)', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
+                      11 Storage Entries
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ overflowX: 'auto', border: '1px solid #1F293D', borderRadius: 10 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#161B22', color: '#64748B', borderBottom: '1px solid #1F293D' }}>
+                        <th style={{ padding: '10px 14px' }}>Transaction Event</th>
+                        <th style={{ padding: '10px 14px' }}>Soroban Smart Contract Function Call</th>
+                        <th style={{ padding: '10px 14px' }}>Date (UTC)</th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ color: '#CBD5E1' }}>
+                      <tr style={{ borderBottom: '1px solid #1F293D' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ color: '#38BDF8', fontWeight: 600 }}>GACY...BZLA</span> invoked <span style={{ color: '#A78BFA' }}>CCXH...RC4V</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#F1F5F9' }}>
+                          buy_shares(GACY...BZLA, 1_u64, 1_u32, 1000000_i128) <span style={{ color: '#34D399' }}>→ 1993038_i128</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748B' }}>2026-08-29 21:18:30</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #1F293D' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ color: '#38BDF8', fontWeight: 600 }}>GACY...BZLA</span> invoked <span style={{ color: '#A78BFA' }}>CCXH...RC4V</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#F1F5F9' }}>
+                          buy_shares(GACY...BZLA, 1_u64, 1_u32, 1000000_i128) <span style={{ color: '#34D399' }}>→ 1995020_i128</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748B' }}>2026-08-29 21:17:49</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #1F293D' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ color: '#38BDF8', fontWeight: 600 }}>GACY...BZLA</span> invoked <span style={{ color: '#A78BFA' }}>CCXH...RC4V</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#F1F5F9' }}>
+                          buy_shares(GACY...BZLA, 1_u64, 1_u32, 1000000_i128) <span style={{ color: '#34D399' }}>→ 1997007_i128</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748B' }}>2026-08-29 21:07:43</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #1F293D' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ color: '#818CF8', fontWeight: 600 }}>GCV7...VJT7</span> invoked <span style={{ color: '#A78BFA' }}>CCXH...RC4V</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#F1F5F9' }}>
+                          buy_shares(GCV7...VJT7, 1_u64, 1_u32, 1000000_i128) <span style={{ color: '#34D399' }}>→ 1999001_i128</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748B' }}>2026-08-29 20:57:13</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #1F293D' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ color: '#818CF8', fontWeight: 600 }}>GCV7...VJT7</span> invoked <span style={{ color: '#A78BFA' }}>CCXH...RC4V</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#F1F5F9' }}>
+                          add_liquidity(GCV7...VJT7, 4_u64, 10000000_i128) <span style={{ color: '#34D399' }}>→ 2010000000_i128</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748B' }}>2026-08-29 20:38:56</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ color: '#818CF8', fontWeight: 600 }}>GCV7...VJT7</span> invoked <span style={{ color: '#F43F5E' }}>CCA7...WBMH</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#F1F5F9' }}>
+                          create_market(GCV7...VJT7, "Will_EU_fine_an_AI_developer_ove", ...) <span style={{ color: '#34D399' }}>→ 4_u64</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748B' }}>2026-08-29 20:38:45</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 

@@ -37,7 +37,25 @@
 
 Every trade, sell, market creation, and liquidity deposit is a **real Soroban smart contract transaction** signed by the user's Freighter wallet and confirmed on Stellar Mainnet. No centralized backend, no mock data — the blockchain is the single source of truth.
 
-> 💡 **Built for the Stellar Ecosystem** — PredictX showcases the full power of Soroban's composable smart contract architecture: factory patterns, token standards, AMM math, oracle resolution, and multi-contract interactions all wired together in a single cohesive protocol.
+---
+
+## ⚡ Real On-Chain Mainnet Transaction Activity
+
+PredictX contracts are actively deployed and executing transactions on **Stellar Mainnet**. Every market creation, liquidity deposit, and outcome share trade is confirmed on-chain.
+
+**Target Contract:** [`CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V`](https://stellar_expert/explorer/public/contract/CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V)  
+**WASM Hash:** `4fccfb0a...edba0359` · **Contract Balance:** `1.45 XLM` · **Data Storage:** `11 entries`
+
+### 📜 Verified Stellar Mainnet Transaction Log
+
+| Date (UTC) | Invoker Wallet | Soroban Contract Function Invoked | Return Output |
+| :--- | :--- | :--- | :--- |
+| `2026-08-29 21:18:30` | `GACY...BZLA` | `buy_shares(GACY...BZLA, 1_u64, 1_u32, 1000000_i128)` | `→ 1993038_i128` |
+| `2026-08-29 21:17:49` | `GACY...BZLA` | `buy_shares(GACY...BZLA, 1_u64, 1_u32, 1000000_i128)` | `→ 1995020_i128` |
+| `2026-08-29 21:07:43` | `GACY...BZLA` | `buy_shares(GACY...BZLA, 1_u64, 1_u32, 1000000_i128)` | `→ 1997007_i128` |
+| `2026-08-29 20:57:13` | `GCV7...VJT7` | `buy_shares(GCV7...VJT7, 1_u64, 1_u32, 1000000_i128)` | `→ 1999001_i128` |
+| `2026-08-29 20:38:56` | `GCV7...VJT7` | `add_liquidity(GCV7...VJT7, 4_u64, 10000000_i128)` | `→ 2010000000_i128` |
+| `2026-08-29 20:38:45` | `GCV7...VJT7` | `create_market(GCV7...VJT7, "Will_EU_fine_an_AI_developer_ove", 1790627916_u64, CC2N...AFKZ)` | `→ 4_u64` |
 
 ---
 
