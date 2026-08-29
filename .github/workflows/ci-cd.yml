@@ -76,9 +76,9 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
-  # ── JOB 3: CD Release & Testnet Deployment Audit ──
+  # ── JOB 3: CD Release & Mainnet Deployment Audit ──
   deploy-ready:
-    name: 🚀 Production & Testnet Release Audit
+    name: 🚀 Production Mainnet Release Audit
     needs: [contracts-ci, web-ci]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -89,5 +89,5 @@ jobs:
 
       - name: Audit Deployed Contracts Summary
         run: |
-          echo "=== PREDICTX CI/CD PASSED ==="
-          cat deployed-contracts.json
+          echo "=== PREDICTX MAINNET CI/CD PASSED ==="
+          cat deployed-contracts-mainnet.json
