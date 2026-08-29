@@ -910,20 +910,23 @@ export default function AppDashboard() {
 
       // ── STEP 1: Read actual on-chain balance to prevent Insufficient share balance panic ──
       let onChainRawBalance = 0n;
-      try {
-        const balanceRes = await marketClient.get_balance({
-          user: publicKey,
-          market_id: parsedNumericId,
-          outcome,
-        });
-        // get_balance is a read call — access result directly
-        const rawBal = (balanceRes as any)?.result ?? (balanceRes as any);
-        if (rawBal !== undefined && rawBal !== null) {
-          onChainRawBalance = typeof rawBal === 'bigint' ? rawBal : BigInt(String(rawBal));
+      if (typeof (marketClient as any).get_balance === 'function') {
+        try {
+          const balanceRes = await (marketClient as any).get_balance({
+            user: publicKey,
+            market_id: parsedNumericId,
+            outcome,
+          });
+          const rawBal = (balanceRes as any)?.result ?? (balanceRes as any);
+          if (rawBal !== undefined && rawBal !== null) {
+            onChainRawBalance = typeof rawBal === 'bigint' ? rawBal : BigInt(String(rawBal));
+          }
+        } catch (balErr) {
+          console.warn('Could not query on-chain balance:', balErr);
+          // Fallback: convert local display shares to raw — may still fail if mismatch
+          onChainRawBalance = toRawAmount(sharesCount);
         }
-      } catch (balErr) {
-        console.warn('Could not query on-chain balance:', balErr);
-        // Fallback: convert local display shares to raw — may still fail if mismatch
+      } else {
         onChainRawBalance = toRawAmount(sharesCount);
       }
 
