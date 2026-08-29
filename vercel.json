@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "predict-x/package.json",
+      "use": "@vercel/next"
+    }
+  ]
+}
