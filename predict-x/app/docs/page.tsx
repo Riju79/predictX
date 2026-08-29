@@ -326,8 +326,8 @@ export default function DocsPage() {
 
                 <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 11.5, color: '#6E7681', fontWeight: 600, textTransform: 'uppercase' }}>AMM Core ID</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginTop: 4, fontFamily: 'monospace' }}>CBGM366X...ITL</div>
-                  <a href="https://stellar.expert/explorer/public/contract/CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: '#38BDF8', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginTop: 4, fontFamily: 'monospace' }}>CCA73ZY...BMH</div>
+                  <a href="https://stellar.expert/explorer/public/contract/CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: '#38BDF8', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>
                     StellarExpert Mainnet ↗
                   </a>
                 </div>
@@ -569,7 +569,7 @@ npm run dev`}
               <pre style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 10, padding: 16, fontSize: 13, color: '#A78BFA' }}>
 {`NEXT_PUBLIC_STELLAR_NETWORK=public
 NEXT_PUBLIC_SOROBAN_RPC_URL=https://mainnet.sorobanrpc.com
-NEXT_PUBLIC_FACTORY_CONTRACT_ID=CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL`}
+NEXT_PUBLIC_FACTORY_CONTRACT_ID=CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH`}
               </pre>
             </div>
           )}

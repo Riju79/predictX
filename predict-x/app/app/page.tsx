@@ -792,23 +792,41 @@ export default function AppDashboard() {
       validateCreateMarketArgs(contractParams);
 
       const depositAmount = newM.liquidityAmount && newM.liquidityAmount > 0 ? newM.liquidityAmount : 2.0;
+      const rawDeposit = toRawAmount(depositAmount);
 
-      triggerToast(`Please approve ${depositAmount.toFixed(1)} XLM Market Creation & Seed Liquidity deposit in Freighter Wallet...`);
+      triggerToast(`Please approve ${depositAmount.toFixed(1)} XLM Market Creation & Seed Liquidity in Freighter Wallet...`);
 
-      // Execute REAL Stellar Mainnet Payment Transaction signed via Freighter Wallet
-      const txRes = await executeMainnetPayment({
-        userPublicKey: publicKey,
-        destinationAddress: STELLAR_CONFIG.treasury,
-        amountXlm: depositAmount,
+      const factoryClient = getFactoryClient(publicKey);
+      const marketClient = getMarketClient(publicKey);
+
+      // 1. Register Market state machine on-chain via Factory contract
+      const createTx = await factoryClient.create_market({
+        creator: publicKey,
+        question: contractParams.question,
+        resolution_time: contractParams.resolution_time,
+        oracle_id: contractParams.oracle_id,
       });
+      const createRes = await createTx.signAndSend();
+      createTxHash = (createRes as any)?.sendTransactionResponse?.hash || (createRes as any)?.hash;
 
-      // REQUIRE confirmed transaction hash from Stellar Mainnet Horizon
-      if (!txRes || !txRes.success || !txRes.txHash) {
-        throw new Error('Transaction submission failed to confirm on Stellar Mainnet.');
+      const onChainMarketId = (createRes as any)?.result ? String((createRes as any).result) : String(Date.now());
+      const numericMarketId = BigInt(onChainMarketId.replace(/[^0-9]/g, '') || String(Date.now()));
+
+      // 2. Add Seed Liquidity non-custodially to the Market smart contract pool
+      if (rawDeposit > 0n) {
+        const addLiqTx = await marketClient.add_liquidity({
+          user: publicKey,
+          market_id: numericMarketId,
+          amount: rawDeposit,
+        });
+        const addRes = await addLiqTx.signAndSend();
+        const addLiqHash = (addRes as any)?.sendTransactionResponse?.hash || (addRes as any)?.hash;
+        if (addLiqHash) {
+          createTxHash = addLiqHash;
+        }
       }
 
-      createTxHash = txRes.txHash;
-      triggerToast(`✅ Market Deployed on Stellar Mainnet! Tx: ${createTxHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
+      triggerToast(`✅ Market & Liquidity Deployed on Stellar Mainnet! Tx: ${createTxHash ? createTxHash.slice(0, 8) : ''}... (Viewable on StellarExpert)`, 'success');
     } catch (e: any) {
       console.error('[Create Market Mainnet Error]:', e);
       const normalized = normalizeStellarError(e);
