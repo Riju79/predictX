@@ -51,18 +51,18 @@ fn test_oracle_lifecycle_multisig() {
     // First approval
     oracle_client.approve(&market_id, &committee.get(0).unwrap());
     let state = market_client.get_market_state(&market_id);
-    assert_eq!(state.status, market_contract::MarketStatus::Open); // Not resolved yet (1/3 approvals)
+    assert_eq!(state.status, 0); // Not resolved yet (1/3 approvals)
 
     // Second approval
     oracle_client.approve(&market_id, &committee.get(1).unwrap());
     let state = market_client.get_market_state(&market_id);
-    assert_eq!(state.status, market_contract::MarketStatus::Open); // Not resolved yet (2/3 approvals)
+    assert_eq!(state.status, 0); // Not resolved yet (2/3 approvals)
 
     // Third approval (should trigger auto-finalization and resolve the market)
     oracle_client.approve(&market_id, &committee.get(2).unwrap());
     let state = market_client.get_market_state(&market_id);
-    assert_eq!(state.status, market_contract::MarketStatus::Resolved); // Auto-resolved!
-    assert_eq!(state.winning_outcome, market_contract::Outcome::Yes);
+    assert_eq!(state.status, 1); // Auto-resolved!
+    assert_eq!(state.winner, 0); // 0 = Yes
 }
 
 #[test]
@@ -105,8 +105,8 @@ fn test_oracle_lifecycle_challenge_window_elapsed() {
     // Now anyone can finalize
     oracle_client.finalize(&market_id);
     let state = market_client.get_market_state(&market_id);
-    assert_eq!(state.status, market_contract::MarketStatus::Resolved);
-    assert_eq!(state.winning_outcome, market_contract::Outcome::No);
+    assert_eq!(state.status, 1);
+    assert_eq!(state.winner, 1); // 1 = No
 }
 
 #[test]
@@ -207,6 +207,6 @@ fn test_oracle_disputed_path() {
     oracle_client.approve(&market_id, &committee.get(2).unwrap()); // Reaches 3 approvals -> auto-finalizes
 
     let state = market_client.get_market_state(&market_id);
-    assert_eq!(state.status, market_contract::MarketStatus::Resolved);
-    assert_eq!(state.winning_outcome, market_contract::Outcome::Yes);
+    assert_eq!(state.status, 1);
+    assert_eq!(state.winner, 0); // 0 = Yes
 }

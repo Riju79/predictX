@@ -175,4 +175,9 @@ impl Market {
         token::Client::new(&env, &taddr).transfer(&env.current_contract_address(), &user, &shares);
         shares
     }
+
+    pub fn get_market_state(env: Env, market_id: u64) -> MarketState {
+        let k = DataKey::Market(market_id);
+        env.storage().persistent().get(&k).unwrap()
+    }
 }
