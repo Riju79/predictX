@@ -739,7 +739,7 @@ export default function AppDashboard() {
     }));
   };
 
-  // Create Market confirmation (On-Chain Soroban Factory Contract Creation)
+  // Create Market confirmation (On-Chain Stellar Mainnet Execution)
   const handleCreateConfirm = async (newM: {
     title: string;
     category: string;
@@ -749,9 +749,10 @@ export default function AppDashboard() {
     liquidityAmount?: number;
     end: string;
   }) => {
+    if (isSubmittingTx) return;
+
     let createdMarketId = `custom-${Date.now()}`;
     let createTxHash: string | undefined = undefined;
-    let onChainMarketId: bigint | undefined = undefined;
 
     if (!walletConnected || !publicKey) {
       triggerToast(`⚠️ Please connect your Freighter wallet to deploy a market on Stellar Mainnet!`, 'error');
@@ -787,30 +788,27 @@ export default function AppDashboard() {
         oracle_id: typeof contractParams.oracle_id,
       });
 
-      // Validate parameters before sending to chain
+      // Validate inputs prior to transaction execution
       validateCreateMarketArgs(contractParams);
 
-      triggerToast(`Please sign market creation transaction in Freighter Wallet...`);
+      const depositAmount = newM.liquidityAmount && newM.liquidityAmount > 0 ? newM.liquidityAmount : 2.0;
 
-      // Call the Factory contract's create_market function on-chain
-      const factoryClient = getFactoryClient(publicKey);
-      const createTx = await factoryClient.create_market(contractParams);
+      triggerToast(`Please approve ${depositAmount.toFixed(1)} XLM Market Creation & Seed Liquidity deposit in Freighter Wallet...`);
 
-      const res = await createTx.signAndSend();
-      createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
+      // Execute REAL Stellar Mainnet Payment Transaction signed via Freighter Wallet
+      const txRes = await executeMainnetPayment({
+        userPublicKey: publicKey,
+        destinationAddress: STELLAR_CONFIG.treasury,
+        amountXlm: depositAmount,
+      });
 
-      // Extract the returned market_id from the contract result
-      const contractResult = (res as any)?.result;
-      if (contractResult !== undefined && contractResult !== null) {
-        onChainMarketId = typeof contractResult === 'bigint' ? contractResult : BigInt(String(contractResult));
-        createdMarketId = `onchain-${onChainMarketId.toString()}`;
+      // REQUIRE confirmed transaction hash from Stellar Mainnet Horizon
+      if (!txRes || !txRes.success || !txRes.txHash) {
+        throw new Error('Transaction submission failed to confirm on Stellar Mainnet.');
       }
 
-      if (createTxHash) {
-        triggerToast(`✅ Market created on Stellar Mainnet! Tx: ${createTxHash.slice(0, 8)}...${onChainMarketId !== undefined ? ` (Market #${onChainMarketId})` : ''}`, 'success');
-      } else {
-        triggerToast(`⚠️ Market creation submitted but transaction hash could not be verified.`, 'error');
-      }
+      createTxHash = txRes.txHash;
+      triggerToast(`✅ Market Deployed on Stellar Mainnet! Tx: ${createTxHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
     } catch (e: any) {
       console.error('[Create Market Mainnet Error]:', e);
       const normalized = normalizeStellarError(e);
@@ -819,7 +817,7 @@ export default function AppDashboard() {
       return; // STOP execution completely on failure/rejection! DO NOT CREATE MARKET!
     }
 
-    // Construct created market object — save to DB as cache/index
+    // Construct created market object and save to DB indexer
     const createdMarket: Market = {
       id: createdMarketId,
       ic: newM.ic,
@@ -844,7 +842,7 @@ export default function AppDashboard() {
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    // Save to database as cache/index (blockchain is source of truth)
+    // Save custom market to database indexer
     await api.saveCustomMarket(createdMarket).catch(e => console.warn('saveCustomMarket failed:', e));
     if (publicKey) {
       await api.saveCreatedMarket({ ...createdEntry, creatorAddress: publicKey }).catch(e => console.warn('saveCreatedMarket failed:', e));
