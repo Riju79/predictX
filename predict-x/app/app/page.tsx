@@ -18,7 +18,7 @@ import { useWallet } from '@/src/wallet';
 import { Outcome } from '@/src/bindings/market';
 import { signTransaction } from '@stellar/freighter-api';
 import { TransactionBuilder, Operation, Horizon, Networks, Asset, Address, xdr } from '@stellar/stellar-sdk';
-import { executeMainnetPayment, fetchMainnetXlmBalance, normalizeStellarError, validateCreateMarketArgs, executeSorobanContractTx } from '@/src/lib/stellar/transactionService';
+import { executeMainnetPayment, fetchMainnetXlmBalance, normalizeStellarError, validateCreateMarketArgs, parseResolutionTime, executeSorobanContractTx } from '@/src/lib/stellar/transactionService';
 import { 
   STELLAR_CONFIG, 
   toRawAmount, 
@@ -762,29 +762,39 @@ export default function AppDashboard() {
     try {
       setIsSubmittingTx(true);
 
-      // Parse resolution time from the end date string
-      const endDate = new Date(newM.end);
-      const resolutionTime = BigInt(Math.floor(endDate.getTime() / 1000));
+      // Parse resolution time safely from end date string or duration ("30d", "7d", etc.)
+      const resolutionTime = parseResolutionTime(newM.end);
       const questionSymbol = toSorobanSymbol(newM.title);
 
-      // Validate parameters before sending to chain
-      validateCreateMarketArgs({
+      const contractParams = {
         creator: publicKey,
         question: questionSymbol,
         resolution_time: resolutionTime,
         oracle_id: STELLAR_CONFIG.contracts.oracle,
+      };
+
+      console.log('[Create Market] FINAL PARAMS', {
+        creator: contractParams.creator,
+        question: contractParams.question,
+        resolution_time: contractParams.resolution_time.toString(),
+        oracle_id: contractParams.oracle_id,
       });
+
+      console.log('[Create Market] PARAM TYPES', {
+        creator: typeof contractParams.creator,
+        question: typeof contractParams.question,
+        resolution_time: typeof contractParams.resolution_time,
+        oracle_id: typeof contractParams.oracle_id,
+      });
+
+      // Validate parameters before sending to chain
+      validateCreateMarketArgs(contractParams);
 
       triggerToast(`Please sign market creation transaction in Freighter Wallet...`);
 
       // Call the Factory contract's create_market function on-chain
       const factoryClient = getFactoryClient(publicKey);
-      const createTx = await factoryClient.create_market({
-        creator: publicKey,
-        question: questionSymbol,
-        resolution_time: resolutionTime,
-        oracle_id: STELLAR_CONFIG.contracts.oracle,
-      });
+      const createTx = await factoryClient.create_market(contractParams);
 
       const res = await createTx.signAndSend();
       createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;

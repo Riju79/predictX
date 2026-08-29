@@ -32,10 +32,32 @@ export const STELLAR_CONFIG = {
   explorerBaseUrl: 'https://stellar.expert/explorer/public',
 };
 
-export const toRawAmount = (val: number | string) => {
-  const parsed = typeof val === 'number' ? val : parseFloat(val);
-  if (isNaN(parsed) || parsed <= 0) return 0n;
-  return BigInt(Math.round(parsed * Math.pow(10, STELLAR_CONFIG.decimals)));
+export const toRawAmount = (val: number | string): bigint => {
+  if (val === undefined || val === null || val === '') {
+    throw new Error('Amount is missing or invalid.');
+  }
+
+  const strVal = typeof val === 'number' ? val.toFixed(7) : String(val).trim();
+  const normalized = strVal.trim();
+
+  if (!/^\d+(\.\d{1,7})?$/.test(normalized)) {
+    const num = Number(normalized);
+    if (!Number.isFinite(num) || num <= 0) {
+      throw new Error(`Invalid XLM amount: ${val}`);
+    }
+    const [wholeStr, fracStr = ''] = num.toFixed(7).split('.');
+    const paddedFrac = fracStr.padEnd(7, '0').slice(0, 7);
+    return BigInt(wholeStr) * 10_000_000n + BigInt(paddedFrac);
+  }
+
+  const [whole, fraction = ''] = normalized.split('.');
+  const paddedFraction = fraction.padEnd(7, '0').slice(0, 7);
+
+  const result = BigInt(whole) * 10_000_000n + BigInt(paddedFraction);
+  if (result <= 0n) {
+    throw new Error(`XLM amount must be greater than 0: ${val}`);
+  }
+  return result;
 };
 
 export const fromRawAmount = (val: bigint | number) =>

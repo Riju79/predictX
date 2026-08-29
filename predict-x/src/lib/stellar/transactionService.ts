@@ -64,6 +64,59 @@ export function normalizeStellarError(error: any): BlockchainError {
 }
 
 /**
+ * Safely parses market duration strings ("30d", "7d"), date strings ("2028-11-03"),
+ * or numeric timestamps into a valid u64 BigInt Unix timestamp in seconds.
+ * Throws a descriptive BlockchainError if the value cannot be parsed or is invalid.
+ */
+export function parseResolutionTime(endInput: string | number): bigint {
+  if (endInput === undefined || endInput === null || endInput === '') {
+    throw new BlockchainError('Market expiration time is missing or invalid.', 'INVALID_ARGUMENT');
+  }
+
+  let timestampSeconds: number | null = null;
+
+  if (typeof endInput === 'number') {
+    if (!Number.isFinite(endInput) || endInput <= 0) {
+      throw new BlockchainError(`Market expiration time is invalid: ${endInput}`, 'INVALID_ARGUMENT');
+    }
+    timestampSeconds = endInput > 1e11 ? Math.floor(endInput / 1000) : Math.floor(endInput);
+  } else {
+    const trimmed = String(endInput).trim();
+
+    // Check if format is duration in days like "30d", "7d", "90d"
+    const durationMatch = trimmed.match(/^(\d+)\s*d$/i);
+    if (durationMatch) {
+      const days = parseInt(durationMatch[1], 10);
+      if (!Number.isFinite(days) || days <= 0) {
+        throw new BlockchainError(`Market duration days is invalid: ${endInput}`, 'INVALID_ARGUMENT');
+      }
+      const futureMs = Date.now() + days * 24 * 60 * 60 * 1000;
+      timestampSeconds = Math.floor(futureMs / 1000);
+    } else if (/^\d+$/.test(trimmed)) {
+      // Numeric timestamp string
+      const num = Number(trimmed);
+      if (!Number.isFinite(num) || num <= 0) {
+        throw new BlockchainError(`Numeric timestamp is invalid: ${endInput}`, 'INVALID_ARGUMENT');
+      }
+      timestampSeconds = num > 1e11 ? Math.floor(num / 1000) : Math.floor(num);
+    } else {
+      // Attempt standard Date parsing
+      const parsedMs = new Date(trimmed).getTime();
+      if (!Number.isFinite(parsedMs) || parsedMs <= 0) {
+        throw new BlockchainError(`Market expiration date is invalid: ${endInput}`, 'INVALID_ARGUMENT');
+      }
+      timestampSeconds = Math.floor(parsedMs / 1000);
+    }
+  }
+
+  if (!Number.isFinite(timestampSeconds) || timestampSeconds <= 0) {
+    throw new BlockchainError(`Market expiration time is invalid: ${endInput}`, 'INVALID_ARGUMENT');
+  }
+
+  return BigInt(timestampSeconds);
+}
+
+/**
  * Defensive pre-flight parameter validation for create_market on Mainnet
  * Deployed MarketFactory Contract expects 4 parameters:
  * 1. creator: Address (G...)
@@ -84,7 +137,7 @@ export function validateCreateMarketArgs(args: {
     throw new BlockchainError('Invalid question symbol. Must be a string between 1 and 32 characters.', 'INVALID_ARGUMENT');
   }
   if (typeof args.resolution_time !== 'bigint' || args.resolution_time <= 0n) {
-    throw new BlockchainError('Invalid resolution_time. Must be a positive u64 Unix timestamp in seconds.', 'INVALID_ARGUMENT');
+    throw new BlockchainError('Market expiration time is invalid.', 'INVALID_ARGUMENT');
   }
   if (!args.oracle_id || !args.oracle_id.startsWith('C')) {
     throw new BlockchainError('Invalid oracle_id address. Must be a valid Soroban contract address starting with C.', 'INVALID_ARGUMENT');
