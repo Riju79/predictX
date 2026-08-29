@@ -58,9 +58,6 @@ export default function Footer() {
             <h4 style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#64748B', margin: 0, fontFamily: fontDisplay }}>
               PRODUCT
             </h4>
-            <a href="/docs" style={{ color: '#A78BFA', fontSize: 13, textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, transition: 'color .15s' }}>
-              📚 Documentation <span style={{ background: 'rgba(167, 139, 250, 0.18)', color: '#C4B5FD', fontSize: 10, padding: '1px 6px', borderRadius: 4 }}>DOCS</span>
-            </a>
             {['Perpetual Futures', 'Markets', 'Incentive program', 'Institutions', 'API & developers'].map(item => (
               <a key={item} href="#" style={{ color: '#E2E8F0', fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'color .15s' }}>
                 {item}
@@ -85,9 +82,6 @@ export default function Footer() {
             <h4 style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#64748B', margin: 0, fontFamily: fontDisplay }}>
               HELP
             </h4>
-            <a href="/docs" style={{ color: '#818CF8', fontSize: 13, textDecoration: 'none', fontWeight: 600, transition: 'color .15s' }}>
-              Documentation Center
-            </a>
             {['Help Center', 'FAQ', 'Fee schedule', 'Trading hours', 'Regulatory'].map(item => (
               <a key={item} href="#" style={{ color: '#E2E8F0', fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'color .15s' }}>
                 {item}
@@ -108,7 +102,6 @@ export default function Footer() {
           <div>© 2026 PredictX Inc. · All rights reserved</div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-            <a href="/docs" style={{ color: '#A78BFA', textDecoration: 'none', fontWeight: 700 }}>📖 Documentation</a>
             <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Privacy</a>
             <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Data Terms of Service</a>
             <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Trading Prohibitions</a>

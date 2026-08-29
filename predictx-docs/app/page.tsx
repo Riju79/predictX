@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
 
 // ── Types ──
 type DocSection =
@@ -34,6 +33,8 @@ interface NavGroup {
   singleId?: DocSection;
 }
 
+const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL || 'http://localhost:3000';
+
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState<DocSection>('introduction');
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -57,7 +58,6 @@ export default function DocsPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  // Nav structure matching the exact reference screenshot
   const navTree: NavGroup[] = [
     {
       id: 'intro-group',
@@ -155,12 +155,12 @@ export default function DocsPage() {
             ☰
           </button>
           
-          <Link href="/app" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <img src="/logo.png" alt="PredictX Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
             <span style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.5px' }}>
               PREDICT<span style={{ color: '#818CF8' }}>X</span>
             </span>
-          </Link>
+          </a>
           
           <span style={{ height: 18, width: 1, background: '#334155' }} />
           
@@ -192,13 +192,29 @@ export default function DocsPage() {
             </span>
           </div>
 
-          <Link href="/app" style={{
-            background: '#1F2937', color: '#F1F5F9', border: '1px solid #374151',
-            padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            textDecoration: 'none', transition: 'all 0.15s ease'
-          }}>
+          <a
+            href={DAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255,255,255,0.15)',
+              padding: '8px 18px',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)',
+              transition: 'all 0.2s ease',
+              letterSpacing: '0.2px'
+            }}
+          >
             Launch DApp →
-          </Link>
+          </a>
         </div>
       </header>
 
@@ -251,22 +267,23 @@ export default function DocsPage() {
                 <button
                   onClick={() => toggleGroup(group.id)}
                   style={{
-                    width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 8,
-                    background: 'transparent', color: hasActiveChild ? '#F1F5F9' : '#94A3B8',
-                    border: 'none', fontWeight: 600, fontSize: 13.5, cursor: 'pointer',
+                    width: '100%', textAlign: 'left', padding: '9px 12px', borderRadius: 8,
+                    background: 'transparent',
+                    color: hasActiveChild ? '#818CF8' : '#8B949E', border: 'none',
+                    fontWeight: 600, fontSize: 13.5, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                   }}
                 >
                   <span>{group.title}</span>
-                  <span style={{ fontSize: 10, transition: 'transform 0.15s ease', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                    ▼
+                  <span style={{ fontSize: 10, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
+                    ▶
                   </span>
                 </button>
 
                 {isOpen && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingLeft: 12, borderLeft: '1px solid #1E293B', marginLeft: 12, marginTop: 2, marginBottom: 2 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingLeft: 12, borderLeft: '1px solid #21262D', marginLeft: 16 }}>
                     {group.items?.map(item => {
-                      const isChildSelected = activeSection === item.id;
+                      const isSelected = activeSection === item.id;
                       return (
                         <button
                           key={item.id}
@@ -275,14 +292,16 @@ export default function DocsPage() {
                             setIsMobileNavOpen(false);
                           }}
                           style={{
-                            width: '100%', textAlign: 'left', padding: '7px 12px', borderRadius: 6,
-                            background: isChildSelected ? 'rgba(124, 58, 237, 0.18)' : 'transparent',
-                            color: isChildSelected ? '#C4B5FD' : '#8B949E', border: 'none',
-                            fontWeight: isChildSelected ? 600 : 400, fontSize: 13, cursor: 'pointer',
+                            width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: 6,
+                            background: isSelected ? 'rgba(129, 140, 248, 0.12)' : 'transparent',
+                            color: isSelected ? '#A5B4FC' : '#8B949E', border: 'none',
+                            fontWeight: isSelected ? 600 : 400, fontSize: 13, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             transition: 'all 0.12s ease'
                           }}
                         >
-                          {item.title}
+                          <span>{item.title}</span>
+                          {isSelected && <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#818CF8' }} />}
                         </button>
                       );
                     })}
@@ -293,62 +312,50 @@ export default function DocsPage() {
           })}
         </aside>
 
-        {/* ── RIGHT MAIN DOCUMENTATION CONTENT AREA ── */}
-        <main style={{ flex: 1, padding: '40px 48px', maxWidth: '960px', margin: '0 auto', overflowX: 'hidden' }}>
+        {/* ── MAIN CONTENT AREA ── */}
+        <main style={{ flex: 1, padding: '40px 48px', maxWidth: 1000, margin: '0 auto' }}>
           
-          {/* Breadcrumb Navigation */}
-          <div style={{ fontSize: 12.5, color: '#64748B', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
-            <span>Docs</span>
-            <span>›</span>
-            <span style={{ color: '#94A3B8', textTransform: 'capitalize' }}>
-              {activeSection.replace('-', ' ')}
+          {/* Active section header badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#818CF8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              DOCUMENTATION SECTION
             </span>
+            <span style={{ color: '#334155' }}>/</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>{activeSection}</span>
           </div>
 
-          {/* SECTION CONTENTS */}
+          {/* ── SECTION CONTENTS ── */}
+
           {activeSection === 'introduction' && (
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>
+              <h1 style={{ fontSize: 32, fontWeight: 800, color: '#F8FAFC', marginBottom: 16, letterSpacing: '-0.5px' }}>
                 PredictX Protocol Documentation
               </h1>
-              <p style={{ fontSize: 15, lineHeight: 1.7, color: '#94A3B8', marginBottom: 28 }}>
-                PredictX is a next-generation, non-custodial decentralized prediction market protocol built natively on <strong>Stellar Soroban Mainnet</strong>.
-                It allows users to create prediction markets, trade YES/NO outcome shares powered by constant-product Automated Market Makers (AMM), and provide liquidity to earn automated trading protocol fees.
+              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 28 }}>
+                PredictX is a high-throughput, non-custodial prediction market exchange protocol built natively on <strong style={{ color: '#F8FAFC' }}>Stellar Soroban</strong> smart contracts. It enables users to trade binary prediction outcome shares (YES / NO) with automated market maker (AMM) constant product liquidity reserves, instant oracle settlement, and zero protocol fees.
               </p>
 
-              {/* Quick Status Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
-                <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 11.5, color: '#6E7681', fontWeight: 600, textTransform: 'uppercase' }}>Network</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#38BDF8', marginTop: 4 }}>Stellar Mainnet</div>
-                  <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>Public Global Stellar Network</div>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%)',
+                border: '1px solid #1E293B', borderRadius: 14, padding: 24, marginBottom: 32
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#F1F5F9', marginTop: 0, marginBottom: 14 }}>
+                  ⚡ Quick Specs & Mainnet Deployment
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                  <div style={{ background: '#0D1117', padding: 14, borderRadius: 10, border: '1px solid #1F293D' }}>
+                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>NETWORK</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#34D399', marginTop: 4 }}>Stellar Mainnet</div>
+                  </div>
+                  <div style={{ background: '#0D1117', padding: 14, borderRadius: 10, border: '1px solid #1F293D' }}>
+                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>FACTORY CONTRACT</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#818CF8', marginTop: 4, fontFamily: 'monospace' }}>CCA73...BMH</div>
+                  </div>
+                  <div style={{ background: '#0D1117', padding: 14, borderRadius: 10, border: '1px solid #1F293D' }}>
+                    <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>SETTLEMENT ENGINE</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#38BDF8', marginTop: 4 }}>Optimistic Oracle + Multisig</div>
+                  </div>
                 </div>
-
-                <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 11.5, color: '#6E7681', fontWeight: 600, textTransform: 'uppercase' }}>AMM Core ID</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginTop: 4, fontFamily: 'monospace' }}>CCA73ZY...BMH</div>
-                  <a href="https://stellar.expert/explorer/public/contract/CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: '#38BDF8', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>
-                    StellarExpert Mainnet ↗
-                  </a>
-                </div>
-
-                <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 11.5, color: '#6E7681', fontWeight: 600, textTransform: 'uppercase' }}>Security & Audit</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#34D399', marginTop: 4 }}>Passed (100%)</div>
-                  <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>Standalone Formal Audit Report</div>
-                </div>
-              </div>
-
-              {/* Callout Box */}
-              <div style={{ background: 'rgba(124, 58, 237, 0.1)', border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: 12, padding: 20, marginBottom: 32 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#C4B5FD', marginBottom: 6 }}>
-                  💡 Core Protocol Highlights
-                </div>
-                <ul style={{ margin: 0, paddingLeft: 20, color: '#CBD5E1', fontSize: 13.5, lineHeight: 1.7 }}>
-                  <li><strong>Zero Middlemen:</strong> All market creation, share minting, and trade calculations occur on-chain via Rust smart contracts.</li>
-                  <li><strong>13.2 KB Compressed WASM:</strong> Nano-optimized storage footprint fitting strictly within host function rent budgets.</li>
-                  <li><strong>Automated LP Rewards:</strong> 50% of trade fees (0.5%) distributed directly to AMM liquidity providers.</li>
-                </ul>
               </div>
             </div>
           )}
@@ -356,79 +363,18 @@ export default function DocsPage() {
           {activeSection === 'protocol-arch' && (
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Protocol Architecture</h2>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 24 }}>
-                PredictX employs a modular, high-throughput smart contract architecture consisting of four core components:
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
+                The PredictX architecture consists of three core layer components: Soroban Smart Contracts, Real-time Indexer & Database, and Next.js Web Terminal.
               </p>
-
-              {/* ASCII / Graphic Box */}
-              <div style={{ background: '#0D1117', border: '1px solid #21262D', borderRadius: 12, padding: 20, fontFamily: 'monospace', fontSize: 12.5, color: '#C9D1D9', lineHeight: 1.5, overflowX: 'auto', marginBottom: 28 }}>
-                {`┌──────────────────────────────────────────────────────────────────┐
-│                      PREDICTX PROTOCOL ENGINE                    │
-└─────────────────────────────────┬────────────────────────────────┘
-                                  │
-    ┌─────────────────────────────┼─────────────────────────────┐
-    ▼                             ▼                             ▼
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│  Market Factory  │───▶│   Market Core    │───▶│   Oracle Module  │
-│  create_market() │    │  buy_shares()    │    │  propose()       │
-│  list_markets()  │    │  sell_shares()   │    │  approve()       │
-└──────────────────┘    └──────────────────┘    └──────────────────┘`}
-              </div>
-
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#E2E8F0', marginTop: 24, marginBottom: 12 }}>Protocol Data Flow</h3>
-              <ol style={{ color: '#CBD5E1', fontSize: 13.5, lineHeight: 1.7, paddingLeft: 20 }}>
-                <li><strong>Creation:</strong> Creators call <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>create_market()</code> via the Market Factory.</li>
-                <li><strong>AMM Initialization:</strong> The contract initializes constant-product outcome reserves (<code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>x · y = k</code>).</li>
-                <li><strong>Trading:</strong> Users swap collateral for YES/NO outcome tokens directly with the Soroban pool.</li>
-                <li><strong>Resolution:</strong> The Oracle committee approves the outcome, enabling winning share redemption.</li>
-              </ol>
             </div>
           )}
 
           {activeSection === 'soroban-arch' && (
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Soroban Contract Architecture</h2>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 24 }}>
-                All contracts are written in pure Rust using the <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>soroban-sdk v27</code> under strict <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>#![no_std]</code> optimizations.
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
+                Written in Rust using the Soroban SDK. Implements Market Factory, Standalone AMM pools, and Oracle consensus contracts.
               </p>
-
-              {/* Code Snippet Box */}
-              <div style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
-                <div style={{ background: '#161B22', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #21262D' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#8B949E' }}>contracts/market/src/lib.rs (MarketState Struct)</span>
-                  <button
-                    onClick={() => handleCopyCode(`#[contracttype]
-#[derive(Clone, Debug, PartialEq)]
-pub struct MarketState {
-    pub id: u64,
-    pub creator: Address,
-    pub resolution_time: u64,
-    pub oracle_id: Address,
-    pub status: MarketStatus,
-    pub winning_outcome: Outcome,
-    pub yes_reserves: i128,
-    pub no_reserves: i128,
-}`, 'market-state')}
-                    style={{ background: '#21262D', color: '#C9D1D9', border: 'none', padding: '3px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer' }}
-                  >
-                    {copiedCode === 'market-state' ? 'Copied!' : 'Copy Code'}
-                  </button>
-                </div>
-                <pre style={{ margin: 0, padding: 16, fontSize: 12.5, color: '#E6EDE3', fontFamily: 'monospace', lineHeight: 1.6, overflowX: 'auto' }}>
-{`#[contracttype]
-#[derive(Clone, Debug, PartialEq)]
-pub struct MarketState {
-    pub id: u64,
-    pub creator: Address,
-    pub resolution_time: u64,
-    pub oracle_id: Address,
-    pub status: MarketStatus,
-    pub winning_outcome: Outcome,
-    pub yes_reserves: i128,
-    pub no_reserves: i128,
-}`}
-                </pre>
-              </div>
             </div>
           )}
 
@@ -436,13 +382,8 @@ pub struct MarketState {
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Frontend Architecture</h2>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
-                Built on Next.js 16 (App Router + Turbopack) and React 19, incorporating @stellar/stellar-sdk and @stellar/freighter-api for secure, non-custodial wallet interactions.
+                Built with Next.js 16 App Router, React 19, Tailwind CSS v4, and Freighter Wallet API.
               </p>
-              <ul style={{ color: '#CBD5E1', fontSize: 13.5, lineHeight: 1.8, paddingLeft: 20 }}>
-                <li><strong>Freighter API Integration:</strong> Auto-detects wallet, sequence checks <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>getAddress()</code> to prevent double popups.</li>
-                <li><strong>Pre-flight Simulation:</strong> Calls <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>simulate_transaction</code> on Soroban RPC prior to signing.</li>
-                <li><strong>Responsive UI:</strong> Native mobile drawers, perps candlestick charts (Lightweight Charts), and live feed updates.</li>
-              </ul>
             </div>
           )}
 
@@ -450,13 +391,8 @@ pub struct MarketState {
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Backend Architecture</h2>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
-                PredictX utilizes a serverless event-driven indexer built into Next.js Route Handlers (<code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>app/api/*</code>).
+                Neon PostgreSQL serverless backend with Next.js API Routes for real-time market sync and trade history indexing.
               </p>
-              <ul style={{ color: '#CBD5E1', fontSize: 13.5, lineHeight: 1.8, paddingLeft: 20 }}>
-                <li><code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>GET /api/markets</code>: Fetches active prediction markets with reserve statistics.</li>
-                <li><code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>GET /api/portfolio</code>: Returns user-specific on-chain positions and trade history.</li>
-                <li><code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>GET /api/trades</code>: Real-time orderbook trade stream.</li>
-              </ul>
             </div>
           )}
 
@@ -464,18 +400,8 @@ pub struct MarketState {
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Infrastructure Architecture</h2>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
-                The protocol relies entirely on decentralized infrastructure providers for maximum uptime and reliability:
+                Hosted on Vercel Edge Network with distributed Soroban RPC fallback nodes.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-                <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 10, padding: 16 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#38BDF8' }}>Soroban Mainnet RPC</div>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>https://mainnet.sorobanrpc.com</div>
-                </div>
-                <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 10, padding: 16 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#A78BFA' }}>Stellar Horizon Mainnet</div>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>https://horizon.stellar.org</div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -483,11 +409,10 @@ pub struct MarketState {
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>AMM Mechanics (x · y = k)</h2>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
-                PredictX employs a constant-product Automated Market Maker for binary prediction outcomes.
+                PredictX implements constant product AMM curves adapted for binary outcome tokens where:
               </p>
-              <div style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 12, padding: 20, marginBottom: 24 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#A78BFA', marginBottom: 8 }}>Formula</div>
-                <code style={{ fontSize: 16, color: '#38BDF8' }}>shares_out = (yes_reserves × net_payment) / (no_reserves + net_payment)</code>
+              <div style={{ background: '#0D1117', border: '1px solid #1F293D', borderRadius: 10, padding: 16, fontSize: 16, fontFamily: 'monospace', color: '#A78BFA', marginBottom: 20 }}>
+                Price_YES = Reserve_NO / (Reserve_YES + Reserve_NO)
               </div>
             </div>
           )}
@@ -496,12 +421,8 @@ pub struct MarketState {
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Buying & Selling Shares</h2>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
-                Traders can purchase outcome shares with XLM or sell existing positions back to the pool at any time before market resolution.
+                Users deposit collateral (XLM / native tokens) to mint or swap for YES or NO outcome tokens with auto-calculated slippage protection.
               </p>
-              <ul style={{ color: '#CBD5E1', fontSize: 13.5, lineHeight: 1.8, paddingLeft: 20 }}>
-                <li><strong>Buy Shares:</strong> Invokes <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>buy_shares(user, market_id, outcome, payment)</code>.</li>
-                <li><strong>Sell Shares:</strong> Invokes <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>sell_shares(user, market_id, outcome, shares)</code> with pre-checked balance queries.</li>
-              </ul>
             </div>
           )}
 
@@ -509,7 +430,7 @@ pub struct MarketState {
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Liquidity Provision</h2>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#94A3B8', marginBottom: 20 }}>
-                Liquidity Providers deposit XLM into market pools via <code style={{ background: '#161B22', padding: '2px 6px', borderRadius: 4, color: '#38BDF8' }}>add_liquidity()</code> and receive LP position tokens representing their pool share.
+                Liquidity providers deposit paired collateral to receive LP shares representing fractional ownership of pool reserves.
               </p>
             </div>
           )}
@@ -554,12 +475,23 @@ pub struct MarketState {
           {activeSection === 'local-dev' && (
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F8FAFC', marginBottom: 16 }}>Local Development</h2>
-              <pre style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 10, padding: 16, fontSize: 13, color: '#38BDF8' }}>
+              <div style={{ position: 'relative' }}>
+                <pre style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 10, padding: 16, fontSize: 13, color: '#38BDF8' }}>
 {`git clone https://github.com/Riju79/predictX.git
-cd predictX/predict-x
-npm install
-npm run dev`}
-              </pre>
+cd predictX
+npm install --prefix predict-x
+npm run dev --prefix predict-x`}
+                </pre>
+                <button
+                  onClick={() => handleCopyCode(`git clone https://github.com/Riju79/predictX.git\ncd predictX/predict-x\nnpm install\nnpm run dev`, 'local-dev')}
+                  style={{
+                    position: 'absolute', top: 12, right: 12, background: '#1F2937', border: '1px solid #374151',
+                    color: '#9CA3AF', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer'
+                  }}
+                >
+                  {copiedCode === 'local-dev' ? 'Copied! ✓' : 'Copy'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -636,29 +568,6 @@ NEXT_PUBLIC_FACTORY_CONTRACT_ID=CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBN
 
         </main>
       </div>
-
-      {/* ── CSS FOR RESPONSIVE MEDIA QUERIES ── */}
-      <style jsx global>{`
-        @media (max-width: 768px) {
-          .mobile-nav-toggle {
-            display: block !important;
-          }
-          .sidebar-nav {
-            position: fixed !important;
-            top: 64px !important;
-            left: -280px !important;
-            z-index: 99 !important;
-            transition: left 0.2s ease !important;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.5) !important;
-          }
-          .sidebar-nav.mobile-open {
-            left: 0 !important;
-          }
-          .header-search-container {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
