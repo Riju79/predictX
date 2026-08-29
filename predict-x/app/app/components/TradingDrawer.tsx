@@ -69,7 +69,7 @@ export default function TradingDrawer({
 }: TradingDrawerProps) {
   const [tradeMode, setTradeMode] = useState<'BUY' | 'SELL'>('BUY');
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>('');
-  const [amountVal, setAmountVal] = useState('100');
+  const [amountVal, setAmountVal] = useState('1');
   const [sellSharesVal, setSellSharesVal] = useState<string>('');
   const [selectedSellPct, setSelectedSellPct] = useState<number>(100);
   const [txState, setTxState] = useState<'idle' | 'loading' | 'success'>('idle');
@@ -331,11 +331,33 @@ export default function TradingDrawer({
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 11.5, color: t.textDim }}>
                   <span>Balance: {walletBalance.toFixed(2)} {currency}</span>
                   <span 
-                    onClick={() => setAmountVal(walletBalance.toFixed(0))}
+                    onClick={() => setAmountVal(walletBalance.toString())}
                     style={{ color: t.accent, cursor: 'pointer', fontWeight: 600 }}
                   >
                     Use Max
                   </span>
+                </div>
+                {/* Preset quick amount buttons */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  {[0.1, 1, 5, 10, 50].map(val => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        const curr = parseFloat(amountVal) || 0;
+                        const next = parseFloat((curr + val).toFixed(4));
+                        setAmountVal(next.toString());
+                      }}
+                      style={{
+                        flex: 1, padding: '5px 2px', borderRadius: 6,
+                        border: `1px solid ${t.line}`, background: t.surface2,
+                        color: t.textDim, fontSize: 11, fontWeight: 700,
+                        cursor: 'pointer', fontFamily: fontMono,
+                      }}
+                    >
+                      +{val}
+                    </button>
+                  ))}
                 </div>
               </div>
 

@@ -222,7 +222,8 @@ export default function MarketDetailPage({
 
   const addPreset = (val: number) => {
     const current = parseFloat(amountInput) || 0;
-    setAmountInput((current + val).toString());
+    const updated = parseFloat((current + val).toFixed(4));
+    setAmountInput(updated.toString());
   };
 
   const handleTradeSubmit = (e: React.FormEvent) => {
@@ -1388,17 +1389,17 @@ export default function MarketDetailPage({
                 />
               </div>
 
-              {/* Quick Preset Buttons matching screenshot (+$1, +$5, +$10, +$100) */}
+              {/* Quick Preset Buttons (+$0.1, +$1, +$5, +$10, +$100) */}
               <div style={{ display: 'flex', gap: 6 }}>
-                {[1, 5, 10, 100].map(val => (
+                {[0.1, 1, 5, 10, 100].map(val => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => addPreset(val)}
                     style={{
-                      flex: 1, padding: '6px', borderRadius: 6,
+                      flex: 1, padding: '6px 2px', borderRadius: 6,
                       border: `1px solid #2B3242`, background: '#1E293B',
-                      color: '#CBD5E1', fontSize: 11, fontWeight: 700,
+                      color: '#CBD5E1', fontSize: 10.5, fontWeight: 700,
                       cursor: 'pointer', fontFamily: fontMono,
                     }}
                   >
