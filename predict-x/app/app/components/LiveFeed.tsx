@@ -48,37 +48,20 @@ export default function LiveFeed({ markets, onSelectMarket }: LiveFeedProps) {
   const [chats, setChats] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
 
-  const logEndRef = useRef<HTMLDivElement>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize data
+  // Keep internal log and chat scrollboxes updated without forcing main page viewport auto-scroll
   useEffect(() => {
-    // Generate initial logs
-    const initialLogs: LogEntry[] = [
-      { id: '1', time: '00:10:02', type: 'ledger', text: 'Stellar Ledger #5932840 closed. (6 txs, time: 2.1s)' },
-      { id: '2', time: '00:10:04', type: 'trade', text: 'Account GDJ3... purchased 250 YES shares on GPT-5 Launch for $120.00 USDC' },
-      { id: '3', time: '00:10:07', type: 'trade', text: 'Account GCR8... opened Brent Crude Oil position on Stellar DEX' },
-      { id: '4', time: '00:10:09', type: 'system', text: 'New Soroban Multi-Outcome Contract Synced on Stellar Network.' },
-    ];
-    setLogs(initialLogs);
-
-    // Generate initial chats matching user comments
-    const initialChats: ChatMessage[] = [
-      { id: '1', user: 'naidri', avatar: '⚽', text: 'Add Raphinha to Ballon d\'Or market!', time: '12:02 AM', marketTag: "Ballon d'Or" },
-      { id: '2', user: 'bau7', avatar: '🐱', text: 'ADD RODRI to nominees list!', time: '12:04 AM', marketTag: "Ballon d'Or" },
-      { id: '3', user: 'StellarWhale', avatar: '🦁', text: 'LeBron James to Cavs at 38% looks solid.', time: '12:05 AM', marketTag: 'NBA' },
-      { id: '4', user: 'SorobanDev', avatar: '🤖', text: 'Stellar Network connections loaded successfully.', time: '12:06 AM', marketTag: 'Network' },
-    ];
-    setChats(initialChats);
-  }, []);
-
-  // Automatic smooth scroll to latest message when comments update
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [chats]);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
   }, [logs]);
 
   // Simulate real-time streaming comments & logs automatically
@@ -230,18 +213,19 @@ export default function LiveFeed({ markets, onSelectMarket }: LiveFeedProps) {
               <span style={{ fontSize: 10, fontFamily: fontMono, color: t.textFaint }}>Synced</span>
             </div>
 
-            <div style={{
-              flex: 1, background: '#07090C', border: `1px solid ${t.lineSoft}`,
-              borderRadius: 8, padding: 12, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
-              fontSize: 12, fontFamily: fontMono,
-            }}>
+            <div 
+              ref={logContainerRef}
+              style={{
+                flex: 1, background: '#07090C', border: `1px solid ${t.lineSoft}`,
+                borderRadius: 8, padding: 12, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
+                fontSize: 12, fontFamily: fontMono,
+              }}>
               {logs.map(log => (
                 <div key={log.id} style={{ display: 'flex', gap: 6, color: getLogColor(log.type), lineHeight: 1.4 }}>
                   <span style={{ color: t.textFaint, flexShrink: 0 }}>[{log.time}]</span>
                   <span>{log.text}</span>
                 </div>
               ))}
-              <div ref={logEndRef} />
             </div>
           </div>
 
@@ -259,11 +243,13 @@ export default function LiveFeed({ markets, onSelectMarket }: LiveFeedProps) {
             </div>
 
             {/* Message board */}
-            <div style={{
-              flex: 1, border: `1px solid ${t.lineSoft}`, borderRadius: 8,
-              padding: 12, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10,
-              background: t.surface2, marginBottom: 10, scrollBehavior: 'smooth',
-            }}>
+            <div 
+              ref={chatContainerRef}
+              style={{
+                flex: 1, border: `1px solid ${t.lineSoft}`, borderRadius: 8,
+                padding: 12, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10,
+                background: t.surface2, marginBottom: 10, scrollBehavior: 'smooth',
+              }}>
               {chats.map(chat => (
                 <div key={chat.id} style={{ display: 'flex', gap: 8, fontSize: 12.5, fontFamily: fontBody }}>
                   <span style={{ fontSize: 16, background: t.surface, borderRadius: '50%', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${t.line}`, flexShrink: 0 }}>
@@ -278,7 +264,6 @@ export default function LiveFeed({ markets, onSelectMarket }: LiveFeedProps) {
                   </div>
                 </div>
               ))}
-              <div ref={chatEndRef} />
             </div>
 
             {/* Form Input */}
