@@ -37,8 +37,25 @@ const MARKET_ID = STELLAR_CONFIG.contracts.market;
 const TOKEN_ID = STELLAR_CONFIG.contracts.token;
 const MARKET_NUMERIC_ID = 0n;
 
-const getOnChainMarketId = (_marketId?: string): bigint => {
-  return 1n;
+/**
+ * Resolves a frontend market ID string to an on-chain numeric market ID (u64).
+ * Markets created via the Factory contract return a sequential u64 ID.
+ * For markets with a stored on-chain ID (e.g. "onchain-3"), extract the number.
+ * For legacy/hardcoded markets without on-chain presence, returns 0n (will fail gracefully).
+ */
+const getOnChainMarketId = (marketId?: string): bigint => {
+  if (!marketId) return 0n;
+  // If market ID starts with 'onchain-', extract the numeric part
+  if (marketId.startsWith('onchain-')) {
+    const num = marketId.replace('onchain-', '');
+    try { return BigInt(num); } catch { return 0n; }
+  }
+  // If market ID is purely numeric, use it directly
+  const stripped = marketId.replace(/[^0-9]/g, '');
+  if (stripped.length > 0) {
+    try { return BigInt(stripped); } catch { return 0n; }
+  }
+  return 0n;
 };
 
 /* ── Helper to generate initial history series ── */
@@ -470,7 +487,7 @@ export default function AppDashboard() {
   const loadMarketData = async (pk: string) => {
     try {
       if (!pk) return;
-      const res = await fetch(`https://horizon-testnet.stellar.org/accounts/${pk}`);
+      const res = await fetch(`https://horizon.stellar.org/accounts/${pk}`);
       if (res.ok) {
         const data = await res.json();
         const native = data.balances?.find((b: any) => b.asset_type === 'native');
@@ -620,9 +637,9 @@ export default function AppDashboard() {
       }
 
       if (txHash) {
-        triggerToast(`✅ On-Chain Soroban Bet Confirmed! Tx: ${txHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
+        triggerToast(`✅ Trade Confirmed on Stellar Mainnet! Tx: ${txHash.slice(0, 8)}...`, 'success');
       } else {
-        triggerToast(`✅ On-Chain Soroban Trade Executed! Market #${target.id} state updated.`, 'success');
+        triggerToast(`⚠️ Transaction submitted but hash could not be verified. Check your wallet for confirmation.`, 'error');
       }
     } catch (e: any) {
       console.error('[Mainnet Soroban Trade Error]:', e);
@@ -732,10 +749,9 @@ export default function AppDashboard() {
     liquidityAmount?: number;
     end: string;
   }) => {
-    const cost = newM.liquidityAmount ?? (parseFloat(newM.vol.replace(/[^0-9.]/g, '')) || 100);
-
     let createdMarketId = `custom-${Date.now()}`;
     let createTxHash: string | undefined = undefined;
+    let onChainMarketId: bigint | undefined = undefined;
 
     if (!walletConnected || !publicKey) {
       triggerToast(`⚠️ Please connect your Freighter wallet to deploy a market on Stellar Mainnet!`, 'error');
@@ -746,32 +762,54 @@ export default function AppDashboard() {
     try {
       setIsSubmittingTx(true);
 
-      const depositAmount = cost > 0 ? cost : 1.0;
-      triggerToast(`Please approve ${depositAmount.toFixed(1)} XLM Market Creation & Seed Liquidity deposit in Freighter Wallet...`);
+      // Parse resolution time from the end date string
+      const endDate = new Date(newM.end);
+      const resolutionTime = BigInt(Math.floor(endDate.getTime() / 1000));
+      const questionSymbol = toSorobanSymbol(newM.title);
 
-      // 1. Execute REAL Stellar Mainnet Payment Transaction signed via Freighter Wallet
-      const txRes = await executeMainnetPayment({
-        userPublicKey: publicKey,
-        destinationAddress: STELLAR_CONFIG.treasury,
-        amountXlm: depositAmount,
+      // Validate parameters before sending to chain
+      validateCreateMarketArgs({
+        creator: publicKey,
+        question: questionSymbol,
+        resolution_time: resolutionTime,
+        oracle_id: STELLAR_CONFIG.contracts.oracle,
       });
 
-      // 2. REQUIRE confirmed transaction hash from Stellar Mainnet Horizon
-      if (!txRes || !txRes.success || !txRes.txHash) {
-        throw new Error('Transaction submission failed to confirm on Stellar Mainnet.');
+      triggerToast(`Please sign market creation transaction in Freighter Wallet...`);
+
+      // Call the Factory contract's create_market function on-chain
+      const factoryClient = getFactoryClient(publicKey);
+      const createTx = await factoryClient.create_market({
+        creator: publicKey,
+        question: questionSymbol,
+        resolution_time: resolutionTime,
+        oracle_id: STELLAR_CONFIG.contracts.oracle,
+      });
+
+      const res = await createTx.signAndSend();
+      createTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
+
+      // Extract the returned market_id from the contract result
+      const contractResult = (res as any)?.result;
+      if (contractResult !== undefined && contractResult !== null) {
+        onChainMarketId = typeof contractResult === 'bigint' ? contractResult : BigInt(String(contractResult));
+        createdMarketId = `onchain-${onChainMarketId.toString()}`;
       }
 
-      createTxHash = txRes.txHash;
-      triggerToast(`✅ Mainnet Market Deployed on Stellar! Tx: ${createTxHash.slice(0, 8)}... (Viewable on StellarExpert)`, 'success');
+      if (createTxHash) {
+        triggerToast(`✅ Market created on Stellar Mainnet! Tx: ${createTxHash.slice(0, 8)}...${onChainMarketId !== undefined ? ` (Market #${onChainMarketId})` : ''}`, 'success');
+      } else {
+        triggerToast(`⚠️ Market creation submitted but transaction hash could not be verified.`, 'error');
+      }
     } catch (e: any) {
       console.error('[Create Market Mainnet Error]:', e);
-      const errMsg = e?.message || String(e);
-      triggerToast(`Market creation cancelled: ${errMsg}`, 'error');
+      const normalized = normalizeStellarError(e);
+      triggerToast(`Market creation failed: ${normalized.message}`, 'error');
       setIsSubmittingTx(false);
       return; // STOP execution completely on failure/rejection! DO NOT CREATE MARKET!
     }
 
-    // 4. Construct created market object and save to DB BEFORE reloading state
+    // Construct created market object — save to DB as cache/index
     const createdMarket: Market = {
       id: createdMarketId,
       ic: newM.ic,
@@ -782,7 +820,7 @@ export default function AppDashboard() {
       vol: newM.vol,
       end: newM.end,
       txHash: createTxHash,
-      explorerUrl: createTxHash ? `https://stellar.expert/explorer/public/tx/${createTxHash}` : undefined,
+      explorerUrl: createTxHash ? `${STELLAR_CONFIG.explorerBaseUrl}/tx/${createTxHash}` : undefined,
       history: generateInitialHistory(newM.outcomes),
     };
 
@@ -796,7 +834,7 @@ export default function AppDashboard() {
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    // Save custom market PERMANENTLY to database
+    // Save to database as cache/index (blockchain is source of truth)
     await api.saveCustomMarket(createdMarket).catch(e => console.warn('saveCustomMarket failed:', e));
     if (publicKey) {
       await api.saveCreatedMarket({ ...createdEntry, creatorAddress: publicKey }).catch(e => console.warn('saveCreatedMarket failed:', e));
@@ -804,7 +842,7 @@ export default function AppDashboard() {
 
     setMarkets(prev => [createdMarket, ...prev]);
 
-    // 5. Cleanup state and refresh wallet & market data
+    // Cleanup state and refresh wallet & market data
     setIsSubmittingTx(false);
     await loadMarketData(publicKey);
     if (typeof wallet.refresh === 'function') {
@@ -815,32 +853,10 @@ export default function AppDashboard() {
 
   // ── Smart Contract Relations & Execution Handlers ──
   
-  // 1. Mint Testnet Tokens (Token Smart Contract)
+  // Token minting is admin-only on Mainnet — this function is disabled.
+  // Users acquire tokens through normal Stellar DEX/on-ramp flows.
   const handleMintTokens = async () => {
-    if (!walletConnected || !publicKey) {
-      triggerToast('Connect Freighter Wallet first to mint testnet tokens on-chain!', 'error');
-      return;
-    }
-    try {
-      setIsSubmittingTx(true);
-      triggerToast('Minting 1,000 Testnet XLM via Soroban Token Contract...');
-      const tokenClient = getTokenClient(publicKey);
-      const raw = toRawAmount(1000);
-      const mintTx = await tokenClient.mint({
-        to: publicKey,
-        amount: raw,
-      });
-      await mintTx.signAndSend();
-      triggerToast('✅ Successfully minted 1,000 XLM tokens on Soroban Testnet!');
-      await loadMarketData(publicKey);
-    } catch (e: unknown) {
-        console.info('Mint tokens notice:', e);
-        const msg = e instanceof Error ? e.message : String(e);
-        triggerToast(`Minted 1,000 tokens in demo balance! (${msg.slice(0, 30)})`);
-        setWalletBalance(prev => prev + 1000);
-    } finally {
-      setIsSubmittingTx(false);
-    }
+    triggerToast('Token minting is not available on Stellar Mainnet. Use a Stellar DEX or on-ramp to acquire tokens.', 'error');
   };
 
   // 2. Sell Shares back to Market AMM (Soroban Smart Contract Execution)
@@ -909,9 +925,9 @@ export default function AppDashboard() {
       sellTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
       if (sellTxHash) {
-        triggerToast(`✅ Sold ${actualSharesToSell.toFixed(4)} "${outcomeName}" Shares! Tx: ${sellTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+        triggerToast(`✅ Sold ${actualSharesToSell.toFixed(4)} "${outcomeName}" Shares! Tx: ${sellTxHash.slice(0, 8)}...`, 'success');
       } else {
-        triggerToast(`✅ Sold ${actualSharesToSell.toFixed(4)} "${outcomeName}" shares back to Soroban Contract!`, 'success');
+        triggerToast(`⚠️ Sell submitted but transaction hash could not be verified. Check your wallet.`, 'error');
       }
 
       // Override sharesCount with what was actually sold on-chain
@@ -1019,7 +1035,7 @@ export default function AppDashboard() {
     if (walletConnected && publicKey) {
       try {
         setIsSubmittingTx(true);
-        triggerToast(`Claiming winning payout on Soroban Testnet Market Contract...`);
+        triggerToast(`Claiming winning payout on Stellar Mainnet Market Contract...`);
         const marketClient = getMarketClient(publicKey);
         const parsedNumericId = BigInt(target.id.replace(/[^0-9]/g, '') || '1');
 
@@ -1031,9 +1047,9 @@ export default function AppDashboard() {
         claimTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
         if (claimTxHash) {
-          triggerToast(`✅ Claimed winning payout! Tx: ${claimTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+          triggerToast(`✅ Claimed winning payout! Tx: ${claimTxHash.slice(0, 8)}...`, 'success');
         } else {
-          triggerToast(`✅ Payout claimed from Soroban Market Contract #${target.id}!`, 'success');
+          triggerToast(`⚠️ Claim submitted but transaction hash could not be verified. Check your wallet.`, 'error');
         }
       } catch (e: unknown) {
         console.error('Claim winnings error:', e);
@@ -1053,7 +1069,8 @@ export default function AppDashboard() {
         }
       }
     } else {
-      triggerToast(`Claimed winning payout (Demo Mode)!`);
+      triggerToast(`Please connect your Freighter wallet to claim winnings.`, 'error');
+      return;
     }
 
     if (publicKey) {
@@ -1102,7 +1119,8 @@ export default function AppDashboard() {
         setIsSubmittingTx(false);
       }
     } else {
-      triggerToast(`Oracle outcome proposal submitted (Demo Mode)!`);
+      triggerToast(`Please connect your Freighter wallet to propose outcomes.`, 'error');
+      return;
     }
   };
 
@@ -1133,9 +1151,9 @@ export default function AppDashboard() {
         addTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
         if (addTxHash) {
-          triggerToast(`✅ Deposited ${amount} XLM Liquidity! Tx: ${addTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+          triggerToast(`✅ Deposited ${amount} XLM Liquidity! Tx: ${addTxHash.slice(0, 8)}...`, 'success');
         } else {
-          triggerToast(`✅ Successfully deposited ${amount} XLM into LP pool!`, 'success');
+          triggerToast(`⚠️ Liquidity deposit submitted but transaction hash could not be verified.`, 'error');
         }
       } catch (e: unknown) {
         console.error('Add liquidity error:', e);
@@ -1155,7 +1173,8 @@ export default function AppDashboard() {
         }
       }
     } else {
-      triggerToast(`Added ${amount} XLM Liquidity (Demo Mode)!`);
+      triggerToast(`Please connect your Freighter wallet to add liquidity.`, 'error');
+      return;
     }
 
     if (publicKey) {
@@ -1203,9 +1222,9 @@ export default function AppDashboard() {
         removeTxHash = (res as any)?.sendTransactionResponse?.hash || (res as any)?.hash;
 
         if (removeTxHash) {
-          triggerToast(`✅ Withdrew ${amount} XLM Liquidity! Tx: ${removeTxHash.slice(0, 8)}... (StellarExpert viewable)`, 'success');
+          triggerToast(`✅ Withdrew ${amount} XLM Liquidity! Tx: ${removeTxHash.slice(0, 8)}...`, 'success');
         } else {
-          triggerToast(`✅ Successfully withdrew ${amount} XLM from LP pool!`, 'success');
+          triggerToast(`⚠️ Liquidity withdrawal submitted but transaction hash could not be verified.`, 'error');
         }
       } catch (e: unknown) {
         console.error('Remove liquidity error:', e);
@@ -1225,7 +1244,8 @@ export default function AppDashboard() {
         }
       }
     } else {
-      triggerToast(`Withdrew ${amount} XLM Liquidity (Demo Mode)!`);
+      triggerToast(`Please connect your Freighter wallet to remove liquidity.`, 'error');
+      return;
     }
 
     if (publicKey) {
@@ -1288,7 +1308,8 @@ export default function AppDashboard() {
         setIsSubmittingTx(false);
       }
     } else {
-      triggerToast(`Dispute filed for Market #${marketId} (Demo Mode)!`);
+      triggerToast(`Please connect your Freighter wallet to dispute outcomes.`, 'error');
+      return;
     }
   };
 
@@ -1494,7 +1515,7 @@ export default function AppDashboard() {
               textAlign: 'center',
             }}>
               <div style={{ fontSize: 11.5, color: t.textDim, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.04em' }}>
-                {walletConnected ? `Stellar Testnet (${currency} Balance)` : 'Wallet Status'}
+                {walletConnected ? `Stellar Mainnet (${currency} Balance)` : 'Wallet Status'}
               </div>
               <div style={{ fontSize: 28, fontWeight: 700, color: t.text, fontFamily: fontMono }}>
                 {activeBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
@@ -1554,7 +1575,7 @@ export default function AppDashboard() {
 
               <button
                 onClick={handleMintTokens}
-                title="Mint 1,000 Testnet XLM/USDC tokens via Soroban Token Smart Contract"
+                title="Token minting is not available on Stellar Mainnet"
                 style={{
                   background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                   color: '#FFFFFF', border: 'none', borderRadius: 6,
@@ -1671,7 +1692,7 @@ export default function AppDashboard() {
                           </div>
                           {item.txHash && (
                             <a
-                              href={`https://stellar.expert/explorer/testnet/tx/${item.txHash}`}
+                              href={`${STELLAR_CONFIG.explorerBaseUrl}/tx/${item.txHash}`}
                               target="_blank"
                               rel="noreferrer"
                               style={{ color: t.accent, fontSize: 10.5, textDecoration: 'none', fontWeight: 600, marginTop: 2, display: 'inline-block' }}
@@ -1772,7 +1793,7 @@ export default function AppDashboard() {
                       name: '1. Token Contract (XLM / Collateral)',
                       symbol: 'token.rs',
                       address: STELLAR_CONFIG.contracts.token,
-                      desc: 'Handles collateral balance queries, user approvals (approve), and testnet token minting (mint).',
+                      desc: 'Handles collateral token balance queries and user approvals (approve). Token minting requires admin authority.',
                       actions: [
                         { label: '🚰 Mint 1,000 Tokens', fn: handleMintTokens },
                         { label: 'Sync Balance', fn: () => loadMarketData(publicKey || '') },

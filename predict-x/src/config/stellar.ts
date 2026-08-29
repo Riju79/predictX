@@ -13,13 +13,23 @@ export const STELLAR_CONFIG = {
   horizonUrl: 'https://horizon.stellar.org',
   treasury: 'GACY34BGOUKJIT25Q3V6QHISDFEYD67GJUMFIC7LD74ATOYNN4VBBZLA',
   contracts: {
+    // Factory & Market share the same contract on mainnet.
+    // The Factory's MarketContract instance storage points to itself.
     market: 'CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL',
-    token: 'CAS3J5D3AEVFD4BLTC3C55EEB5EBQX3TDKQL6Y2RME6F74D5EE6UY63E',
-    amm: 'CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO',
     factory: 'CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL',
     oracle: 'CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ',
+    amm: 'CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO',
+    // WARNING: Token contract address needs verification.
+    // The Market contract's initialize() has not been called on mainnet yet,
+    // so no TokenAddress is stored on-chain. Both addresses from config files
+    // fail checksum validation. This placeholder is from deployed-contracts-mainnet.json.
+    // Trading operations (buy/sell/liquidity) will fail until the Market contract
+    // is initialized with a valid token address on mainnet.
+    token: 'CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX',
   },
   decimals: 7,
+  // Mainnet explorer base URL
+  explorerBaseUrl: 'https://stellar.expert/explorer/public',
 };
 
 export const toRawAmount = (val: number | string) => {
