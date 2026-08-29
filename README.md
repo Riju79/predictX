@@ -25,7 +25,7 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🌐 Live App](https://predict-x-gray.vercel.app/app) · [📚 Documentation Website](predictx-docs/) · [𝕏 Twitter](https://x.com/predict_x79) · [🐙 GitHub Repo](https://github.com/Riju79/predictX) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) · [🛡️ Security Audit Report](SECURITY_AUDIT.md) · [📄 PPT](https://predictx-presentation.vercel.app/) · [🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
+[🌐 Live App](https://predict-x-gray.vercel.app/app) · [📚 Documentation](https://predict-x-gray.vercel.app/docs) · [𝕏 Twitter](https://x.com/predict_x79) · [🐙 GitHub Repo](https://github.com/Riju79/predictX) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) · [🛡️ Security Audit Report](SECURITY_AUDIT.md) · [📄 PPT](https://predictx-presentation.vercel.app/) · [🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
 
 </div>
 
