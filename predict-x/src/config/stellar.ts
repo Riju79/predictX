@@ -39,15 +39,19 @@ export const toRawAmount = (val: number | string): bigint => {
     }
     const [wholeStr, fracStr = ''] = num.toFixed(7).split('.');
     const paddedFrac = fracStr.padEnd(7, '0').slice(0, 7);
-    return BigInt(wholeStr) * 10_000_000n + BigInt(paddedFrac);
+    const res = BigInt(wholeStr) * 10_000_000n + BigInt(paddedFrac);
+    if (res < 1_000_000n) {
+      throw new Error(`Minimum trading amount is 0.1 XLM`);
+    }
+    return res;
   }
 
   const [whole, fraction = ''] = normalized.split('.');
   const paddedFraction = fraction.padEnd(7, '0').slice(0, 7);
 
   const result = BigInt(whole) * 10_000_000n + BigInt(paddedFraction);
-  if (result <= 0n) {
-    throw new Error(`XLM amount must be greater than 0: ${val}`);
+  if (result < 1_000_000n) {
+    throw new Error(`Minimum trading amount is 0.1 XLM`);
   }
   return result;
 };

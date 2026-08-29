@@ -509,7 +509,6 @@ export default function MarketDetailPage({
                       { label: 'Challenge Window', value: '24 Hours Dispute Period' },
                       { label: 'Real-Time Data Feed', value: 'Live Soroban Ledger & Price Feeds' },
                       { label: 'Max leverage', value: '6x' },
-                      { label: 'Minimum trading unit', value: `0.1 XLM / $1.10 minimum` },
                       { label: 'Trading hours', value: '24/7 Continuous Trading', bold: true },
                       { label: 'Index Feed', value: `Stellar Decentralized Index (${market.title})` },
                       { label: 'Venue', value: 'PredictX Stellar Protocol' },
@@ -1192,7 +1191,6 @@ export default function MarketDetailPage({
                 <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 40px' }}>
                   {[
                     { label: 'Max leverage', value: market.category === 'Perps' ? '6x' : 'N/A' },
-                    { label: 'Minimum trading unit', value: '$1.00 minimum' },
                     { label: 'Trading hours', value: '24/7, no restrictions', bold: true },
                     { label: 'Index', value: market.category === 'Crypto' ? 'CME CF Real Time Index' : 'PredictX Index' },
                     { label: 'Funding rate / Countdown', value: '0.0000% · 04:36:25', green: true },
