@@ -43,7 +43,7 @@ Every trade, sell, market creation, and liquidity deposit is a **real Soroban sm
 
 PredictX contracts are actively deployed and executing transactions on **Stellar Mainnet**. Every market creation, liquidity deposit, and outcome share trade is confirmed on-chain.
 
-**Target Contract:** [`CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V`](https://stellar_expert/explorer/public/contract/CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V)  
+**Target Contract:** [`CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V`](https://stellar.expert/explorer/public/contract/CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V)  
 **WASM Hash:** `4fccfb0a...edba0359` · **Contract Balance:** `1.45 XLM` · **Data Storage:** `11 entries`
 
 ### 📜 Verified Stellar Mainnet Transaction Log
@@ -279,8 +279,8 @@ Soroban-native token contract (SEP-41 compatible) for Mainnet USDC asset integra
 
 ```bash
 # Clone the repository
-git clone https://github.com/Riju79/predict-x.git
-cd predict-x
+git clone https://github.com/Riju79/predictX.git
+cd predictX
 
 # Install frontend dependencies
 cd predict-x
@@ -321,11 +321,11 @@ NEXT_PUBLIC_SOROBAN_RPC_URL=https://mainnet.sorobanrpc.com
 NEXT_PUBLIC_HORIZON_URL=https://horizon.stellar.org
 
 # Deployed Smart Contract Addresses (Stellar Mainnet)
-NEXT_PUBLIC_MARKET_CONTRACT_ID=CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL
-NEXT_PUBLIC_FACTORY_CONTRACT_ID=CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL
+NEXT_PUBLIC_MARKET_CONTRACT_ID=CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V
+NEXT_PUBLIC_FACTORY_CONTRACT_ID=CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH
 NEXT_PUBLIC_ORACLE_CONTRACT_ID=CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ
 NEXT_PUBLIC_AMM_CONTRACT_ID=CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO
-NEXT_PUBLIC_TOKEN_CONTRACT_ID=CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX
+NEXT_PUBLIC_TOKEN_CONTRACT_ID=CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA
 ```
 
 ---
@@ -365,7 +365,7 @@ stellar contract deploy \
 ```bash
 # Generate client bindings for Market Factory contract
 stellar contract bindings typescript \
-  --contract-id CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL \
+  --contract-id CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH \
   --network mainnet \
   --output-dir predict-x/src/bindings/factory
 ```
@@ -376,10 +376,12 @@ stellar contract bindings typescript \
 
 | Contract | Address / Contract ID | StellarExpert Mainnet Link |
 |---|---|---|
-| **Market Factory & Protocol State Machine** | `CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CBGM366XLWT3S34X5YY4RIT7YIK3OBEZLEMLAQOAQH77TNA5FY6RTITL) |
+| **Market Factory Contract** | `CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CCA73ZYKH5BB4EVVPVJJNJJV6ALY6DG3FGCNCJMEUA6VJTBNVRGEWBMH) |
+| **Market Core Contract** | `CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CCXHGNQRUJMONANKBM3JCYOHHO2Z4BJHOU2GXH72ORNSEG4CRUSKRC4V) |
 | **AMM Pricing Contract** | `CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CDPPM2LRO3RRO3TGP7NYTWPD2EPEJIJ6S6QHESMZCC5LSOPAZJRFCDZO) |
 | **Oracle Contract** | `CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CC2NCXWMJTVYYICPIZK422RGNDZSSA4YENZCTGNAZQBWMSGQK7SWAFKZ) |
-| **Collateral Token (USDC)** | `CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX` | Stellar Mainnet Asset |
+| **Native XLM Token Contract (SAC)** | `CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA) |
+| **USDC Collateral Token** | `CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX` | [View on StellarExpert ↗](https://stellar.expert/explorer/public/contract/CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX) |
 
 ---
 
@@ -477,21 +479,24 @@ The following tables document our early user onboarding process, user feedback s
 
 | User ID | Name | Email | Wallet Address | Feedback Summary | Improvement Made | Git Commit ID |
 |---|---|---|---|---|---|---|
-| USR-024 | sumon | sumon79.r@gmail.com | `GDU3JE3IHNI2QW4LZHVIJB4JMXJA4JUD7N34D6CGUAQPMXLK4F7NDUOQ` | when i formerly open the in phone the mobile responssive ui was not that good ,but now i open the app to give the feedback now i see the ui has become great | Added full tablet and mobile responsive layout & hamburger slide-in menu | [`9a1e963`](https://github.com/Riju79/predict-x/commit/9a1e963) |
-| USR-030 | rayn | ryanwilliam@gmail.com | `GCZUYZOSZUKN5HEMKBYEWXKSUA2RSAHZLSWVVM7L4YTYEKTPPMVSTPHN` | the mobile ui was not that good as the desktop ui.now the mobile ui also seems perfect | Added dedicated mobile Freighter connection workflow, device detection router & return state restoration | [`40a8ca9`](https://github.com/Riju79/predict-x/commit/40a8ca9) |
-| USR-015 | seyit ali değirmen | degirmenseyit@gmaili.com | `GDOCMYNNTH62NW37IZCN6BKQTM5Z73RW7OOFXRADLYXUABDN3UXWDTNC` | Overall, I liked the flow, the wallet-linking process, and the simplicity of the transactions. I haven't encountered any issues so far. | Rebuilt mobile Freighter integration from scratch adhering strictly to official SDF specs | [`1be22cc`](https://github.com/Riju79/predict-x/commit/1be22cc) |
-| USR-011 | Debangon Pradhan | pradhandebangon2004@gmail.com | `GCIH6KJJ5PEAF2JCESTNOBSWGZC3R2FU7QGGDVGVRQXSEMZV4EXLSOAN` | The ui design is great , now waiting for see this deployed in mainnet | Replaced localStorage indexer with Neon Postgres database for multi-user trade analytics | [`1383d02`](https://github.com/Riju79/predict-x/commit/1383d02) |
-| USR-003 | rohit das | rohit.rj84kly@gmail.com | `GCM2IFWTWTFZCEDOZNK2EY6Z7ATJVU3VJKNOASDKOQTCB63PZPP35XI2` | just deploy on mainnet | Updated live app deployment link (`https://predict-x-gray.vercel.app/app`) in README.md | [`f4feabd`](https://github.com/Riju79/predict-x/commit/f4feabd) |
-| USR-013 | Liya Kirtania | kirtanialiya@gmail.com | `GBYJMJDRPEBYDY3OK6JKAZTV6P6F2FYRBFNAMOKPJRNBP2W5JF5Q3C3Z` | The projects ui design is perfect | Added Data Analytics & Mobile Responsive screenshots and user feedback commit section to README | [`2f723ac`](https://github.com/Riju79/predict-x/commit/2f723ac) |
-| USR-019 | Anay | santaanay03@gmail.com | `GD7G3K5WHHMS236BNOKGL5WALDEDLB4BROK7C6TGKRI7I64R2WISOBCS` | Deep Dive more into technicalities but with a basic approach so that it would more user friendly as well knowledgeable and usefu,Too much features also ruin a project and also less , find that misty spot 🙂 | Cleaned up redundant components and organized modular desktop/mobile wallet architecture | [`8555cd1`](https://github.com/Riju79/predict-x/commit/8555cd1) |
-| USR-035 | Raghu | raghuram.47@gmail.com | `GCJSLVCHJ66OTBZTDEZ56KLMLDYBTXJWL4EJACVY7AGQTXXNK36BNG7I` | market creaton is great | Added Freighter detection timeout, InstallWalletModal, and fixed landing navbar mobile layout | [`751f427`](https://github.com/Riju79/predict-x/commit/751f427) |
-| USR-042 | raj kumar | rajkumar78@gmail.com | `GDSQNTNBQ2IGKRNC3QIUDVPO2BBIHAEMHF2YFDHD3WFMU2L4U7XPQKWK` | Nothing. great thecnicalities. | Revised README with new links, installation guide, and demo video reference | [`6212257`](https://github.com/Riju79/predict-x/commit/6212257) |
-| USR-050 | Aakash | skyakash009@gmail.com | `GD4J2HT3T6445GF2OJGOAHC6VPFRGI7QAJRFRO454TXUJNXOFRXEFMOD` | very great arcitecture | Revised README for landing page and mobile updates with visual architecture schematics | [`17891db`](https://github.com/Riju79/predict-x/commit/17891db) |
-| USR-010 | Rita das | rita84kly@gmail.com | `GD5KLSM2KUTL3VO34BP5S3LG3HMUE2DKERMSEQDOPR5JPHW2UTMPMAK5` | The dapp is ready for mainnet production. | Updated feedback sheet links and formatting in README | [`fffc733`](https://github.com/Riju79/predict-x/commit/fffc733) |
-| USR-002 | riju das | riju.rj84kly@gmail.com | `GATVREHNDPNIKKWHHWSSEZIAGD6R6BLKCNHCWZOXDMHAA3MC2YIALED7` | nothing | Fix deep link navigation to prevent browser 404 page & add Copy URL button for Freighter in-app browser | [`3bde623`](https://github.com/Riju79/predict-x/commit/3bde623) |
-| USR-004 | shashwata mainak | shashwatamainak660@gmail.com | `GCTQKHCDEGW4JAOAMIA5A5STQZD6ZW7XMD7Z5373R7EZYYTFUU3SHZSN` | The project is beyond thoughts. | Implement official Freighter dApp browser guidance flow, eliminate invalid deep link Safari error | [`a7f3c5b`](https://github.com/Riju79/predict-x/commit/a7f3c5b) |
-| USR-040 | aayan | aayandas.90kly@gmail.com | `GDNQHMEMMSV4S72KCJGRM53TVQNCZETWUTHSM6TKYR4MMRISPKD4UK5Y` | this really deserve insta reward | Fix mobile-wallet add direct Freighter Mobile deep link & universal link launcher buttons | [`852f9a3`](https://github.com/Riju79/predict-x/commit/852f9a3) |
-| USR-052 | Aninda | anindarank004@gmail.com | `GAORTO5SKNQ6TCPCYK7UHTORWK2RS6G64TRTRHPDXQYYJCGQHYBIRNQM` | according to my pov everything goes in a good way | Add commit 8555cd1 to README.md user feedback section | [`63a7bb3`](https://github.com/Riju79/predict-x/commit/63a7bb3) |
+| USR-024 | sumon | sumon79.r@gmail.com | `GDU3JE3IHNI2QW4LZHVIJB4JMXJA4JUD7N34D6CGUAQPMXLK4F7NDUOQ` | when i formerly open the in phone the mobile responssive ui was not that good ,but now i open the app to give the feedback now i see the ui has become great | Added full tablet and mobile responsive layout & hamburger slide-in menu | [`9a1e963`](https://github.com/Riju79/predictX/commit/9a1e963) |
+| USR-030 | rayn | ryanwilliam@gmail.com | `GCZUYZOSZUKN5HEMKBYEWXKSUA2RSAHZLSWVVM7L4YTYEKTPPMVSTPHN` | the mobile ui was not that good as the desktop ui.now the mobile ui also seems perfect | Added dedicated mobile Freighter connection workflow, device detection router & return state restoration | [`40a8ca9`](https://github.com/Riju79/predictX/commit/40a8ca9) |
+| USR-015 | seyit ali değirmen | degirmenseyit@gmaili.com | `GDOCMYNNTH62NW37IZCN6BKQTM5Z73RW7OOFXRADLYXUABDN3UXWDTNC` | Overall, I liked the flow, the wallet-linking process, and the simplicity of the transactions. I haven't encountered any issues so far. | Rebuilt mobile Freighter integration from scratch adhering strictly to official SDF specs | [`1be22cc`](https://github.com/Riju79/predictX/commit/1be22cc) |
+| USR-011 | Debangon Pradhan | pradhandebangon2004@gmail.com | `GCIH6KJJ5PEAF2JCESTNOBSWGZC3R2FU7QGGDVGVRQXSEMZV4EXLSOAN` | The ui design is great , now waiting for see this deployed in mainnet | Replaced localStorage indexer with Neon Postgres database for multi-user trade analytics | [`1383d02`](https://github.com/Riju79/predictX/commit/1383d02) |
+| USR-003 | rohit das | rohit.rj84kly@gmail.com | `GCM2IFWTWTFZCEDOZNK2EY6Z7ATJVU3VJKNOASDKOQTCB63PZPP35XI2` | just deploy on mainnet | Updated live app deployment link (`https://predict-x-gray.vercel.app/app`) in README.md | [`f4feabd`](https://github.com/Riju79/predictX/commit/f4feabd) |
+| USR-013 | Liya Kirtania | kirtanialiya@gmail.com | `GBYJMJDRPEBYDY3OK6JKAZTV6P6F2FYRBFNAMOKPJRNBP2W5JF5Q3C3Z` | The projects ui design is perfect | Added Data Analytics & Mobile Responsive screenshots and user feedback commit section to README | [`2f723ac`](https://github.com/Riju79/predictX/commit/2f723ac) |
+| USR-019 | Anay | santaanay03@gmail.com | `GD7G3K5WHHMS236BNOKGL5WALDEDLB4BROK7C6TGKRI7I64R2WISOBCS` | Deep Dive more into technicalities but with a basic approach so that it would more user friendly as well knowledgeable and usefu,Too much features also ruin a project and also less , find that misty spot 🙂 | Cleaned up redundant components and organized modular desktop/mobile wallet architecture | [`8555cd1`](https://github.com/Riju79/predictX/commit/8555cd1) |
+| USR-035 | Raghu | raghuram.47@gmail.com | `GCJSLVCHJ66OTBZTDEZ56KLMLDYBTXJWL4EJACVY7AGQTXXNK36BNG7I` | market creaton is great | Added Freighter detection timeout, InstallWalletModal, and fixed landing navbar mobile layout | [`751f427`](https://github.com/Riju79/predictX/commit/751f427) |
+| USR-042 | raj kumar | rajkumar78@gmail.com | `GDSQNTNBQ2IGKRNC3QIUDVPO2BBIHAEMHF2YFDHD3WFMU2L4U7XPQKWK` | Nothing. great thecnicalities. | Revised README with new links, installation guide, and demo video reference | [`6212257`](https://github.com/Riju79/predictX/commit/6212257) |
+| USR-050 | Aakash | skyakash009@gmail.com | `GD4J2HT3T6445GF2OJGOAHC6VPFRGI7QAJRFRO454TXUJNXOFRXEFMOD` | very great arcitecture | Revised README for landing page and mobile updates with visual architecture schematics | [`17891db`](https://github.com/Riju79/predictX/commit/17891db) |
+| USR-010 | Rita das | rita84kly@gmail.com | `GD5KLSM2KUTL3VO34BP5S3LG3HMUE2DKERMSEQDOPR5JPHW2UTMPMAK5` | The dapp is ready for mainnet production. | Updated feedback sheet links and formatting in README | [`fffc733`](https://github.com/Riju79/predictX/commit/fffc733) |
+| USR-002 | riju das | riju.rj84kly@gmail.com | `GATVREHNDPNIKKWHHWSSEZIAGD6R6BLKCNHCWZOXDMHAA3MC2YIALED7` | nothing | Fix deep link navigation to prevent browser 404 page & add Copy URL button for Freighter in-app browser | [`3bde623`](https://github.com/Riju79/predictX/commit/3bde623) |
+| USR-004 | shashwata mainak | shashwatamainak660@gmail.com | `GCTQKHCDEGW4JAOAMIA5A5STQZD6ZW7XMD7Z5373R7EZYYTFUU3SHZSN` | The project is beyond thoughts. | Implement official Freighter dApp browser guidance flow, eliminate invalid deep link Safari error | [`a7f3c5b`](https://github.com/Riju79/predictX/commit/a7f3c5b) |
+| USR-040 | aayan | aayandas.90kly@gmail.com | `GDNQHMEMMSV4S72KCJGRM53TVQNCZETWUTHSM6TKYR4MMRISPKD4UK5Y` | this really deserve insta reward | Fix mobile-wallet add direct Freighter Mobile deep link & universal link launcher buttons | [`852f9a3`](https://github.com/Riju79/predictX/commit/852f9a3) |
+| USR-052 | Aninda | anindarank004@gmail.com | `GAORTO5SKNQ6TCPCYK7UHTORWK2RS6G64TRTRHPDXQYYJCGQHYBIRNQM` | according to my pov everything goes in a good way | Add commit 8555cd1 to README.md user feedback section | [`63a7bb3`](https://github.com/Riju79/predictX/commit/63a7bb3) |
+| USR-007 | Dhanu shree | Dhanushree.84k@gmail.com | `GCPBSX3IDE6EPMICEABVHTVP6G5P7EFLYCYIXXF3BUGPSJZK6BBIYOLO` | Deploy on mainnet | Deployed verified Mainnet Factory and Market contracts with non-custodial liquidity integration | [`7f2204f`](https://github.com/Riju79/predictX/commit/7f2204f) |
+| USR-038 | koyel | koyelmodal.89@gmail.com | `GB5B6WFPHJMVKKMBSRIWMUCS6QSWCZ4OKNNXRCNTFVPWS5QAMPFHB2VC` | deploy on mainnet | Executed Production Mainnet Release Audit and output verified contract deployment metadata | [`b62c4af`](https://github.com/Riju79/predictX/commit/b62c4af) |
+| USR-047 | Rahul | Rahulmondal.008@gmail.com | `GB5DTJHLII5QQ36RTTLMDUSQZD5KTFQG4NPWDISVPG3XA4B2IIOSSMU3` | no problem faced yet. | Added Verified Real On-Chain Mainnet Transaction Activity section with contract history logs | [`ad40815`](https://github.com/Riju79/predictX/commit/ad40815) |
 
 
 ---
