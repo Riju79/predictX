@@ -103,7 +103,7 @@ try {
   console.log(`✅ Market Contract Instance Deployed: ${deployed.market}`);
 
   // Set default collateral token (Mainnet USDC or fallback)
-  deployed.token = 'CCW67TSBWVENNVMTQPEXNGXYL6P5CZWKWZHB4CCKC2SCFYPPBZER5VKX'; // Mainnet USDC
+  deployed.token = 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'; // Mainnet USDC
 
   // Save to deployed-contracts-mainnet.json
   const mainnetJsonPath = path.join(rootDir, 'deployed-contracts-mainnet.json');
