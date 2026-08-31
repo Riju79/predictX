@@ -25,7 +25,7 @@
 
 **Trade YES/NO outcome shares · Provide AMM liquidity · Earn protocol fees · Everything on-chain**
 
-[🌐 Live App](https://predict-x-gray.vercel.app/app) · [📚 Documentation Website](https://predictx-docs.vercel.app/) · [𝕏 Twitter](https://x.com/predict_x79) · [🐙 GitHub Repo](https://github.com/Riju79/predictX) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) · [🛡️ Security Audit Report](SECURITY_AUDIT.md) · [📄 PPT](https://predictx-presentation.vercel.app/) · [🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
+[🌐 Live App](https://predict-x-gray.vercel.app/) · [📚 Documentation Website](https://predictx-docs.vercel.app/) · [𝕏 Twitter](https://x.com/predict_x79) · [🐙 GitHub Repo](https://github.com/Riju79/predictX) · [📋 Feedback Form](https://forms.gle/SyWZnynTtpWFPG7j8) · [📄 FEEDBACK SHEET](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) · [🛡️ Security Audit Report](SECURITY_AUDIT.md) · [📄 PPT](https://predictx-presentation.vercel.app/) · [🚀 DEMO VIDEO](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa)
 
 </div>
 
@@ -411,7 +411,7 @@ stellar contract bindings typescript \
 
 ## 🔄 User Feedback Changes & Git Commits
 
-> 🌐 **Live Application**: [https://predict-x-gray.vercel.app/app](https://predict-x-gray.vercel.app/app)  
+> 🌐 **Live Application**: [https://predict-x-gray.vercel.app/](https://predict-x-gray.vercel.app/)  
 > 🧪 **Live Feedback Deployment**: [https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/](https://predict-fip0qirtm-rijurj84kly-beeps-projects.vercel.app/)
 
 The following tables document our early user onboarding process, user feedback summaries, and the corresponding code improvements implemented with associated Git commit IDs across protocol development iterations:
@@ -597,7 +597,7 @@ PredictX bridges real-world intelligence with automated market makers on Stellar
 |---|---|---|
 | 𝕏 **Twitter / X Account** | [**@predict_x79**](https://x.com/predict_x79) | Official protocol announcements, mainnet updates, & market drop alerts |
 | 🐙 **GitHub Repository** | [**Riju79/predictX**](https://github.com/Riju79/predictX) | Open-source smart contract code, frontend dApp, & contribution guidelines |
-| 🌐 **Live Web Application** | [**predict-x-gray.vercel.app**](https://predict-x-gray.vercel.app/app) | Mainnet prediction trading terminal & liquidity pools |
+| 🌐 **Live Web Application** | [**predict-x-gray.vercel.app**](https://predict-x-gray.vercel.app/) | Mainnet prediction trading terminal & liquidity pools |
 | 📚 **Documentation Website** | [**predictx-docs.vercel.app**](https://predictx-docs.vercel.app/) | Technical architecture, Soroban smart contract specs & API guides |
 | 📋 **Community Feedback** | [**Google Form**](https://forms.gle/SyWZnynTtpWFPG7j8) · [**Responses Sheet**](https://docs.google.com/spreadsheets/d/1BEMWSMzzhpb87IglygYy2K7EfSFIu_AuMIC2cH_ghGw/edit?resourcekey=&gid=60851251#gid=60851251) | Early user onboarding & feedback portal |
 | 📽️ **Video Demonstration** | [**YouTube Demo**](https://youtu.be/I1hi_T5dujE?si=pOnHJtqk1yaiJnKa) | Complete walkthrough of PredictX trading & AMM mechanics |
